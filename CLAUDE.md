@@ -1,617 +1,216 @@
-# Australian Policy Accountability System — Build Instructions
+# CLAUDE.md — Follow the Money: Australian Policy Accountability System
 
-## What You Are Building
+## Mission
 
-A two-part system:
+Track 30 years (1996–present) of Australian parliamentary decisions and cross-reference them with political donations, MP declared interests, and corporate tax data. Surface potential conflicts of interest and make this information accessible to ordinary Australians.
 
-1. **Ingestion + Rules Engine** (`/src/`) — plain Node.js, zero AI, zero API costs.
-   Cowork schedules this to run on the local machine. It pulls Australian government
-   data, stores it in Supabase, and auto-flags suspicious policy events using
-   deterministic rules.
+This is a public accountability tool, not a partisan project. Both major parties are scrutinised equally.
 
-2. **Analysis runner** — NOT built here. Claude Code reads `ANALYSIS_TASK.md`
-   at runtime to process flagged items interactively. Do not conflate the two.
+## Audience
 
-Your job in this file: build part 1 completely. It must be robust, idempotent,
-and runnable with a single command: `node src/index.js`
+General public. Every piece of analysis must be understandable by a non-political person in under 30 seconds. No jargon. No hedge-everything lawyerspeak. If a mining company donated $2M to a party that then gave them a $500M tax concession, say that plainly.
 
 ---
 
-## Stack
+## Architecture
 
-- **Runtime**: Node.js 20 (ESM — set `"type": "module"` in package.json)
-- **Database**: Supabase via `@supabase/supabase-js`
-- **HTTP**: `axios` with retry logic
-- **CSV parsing**: `csv-parse`
-- **HTML scraping**: `cheerio` + `axios`
-- **Env vars**: `dotenv`
-- **Scheduling**: none — Cowork handles scheduling externally.
-  This script runs once per invocation and exits with code 0 on success.
+### Backend — Ingestion + Rules Engine (`/src/`)
+
+Plain Node.js pipeline. Zero AI, zero API costs. Pulls government data, stores in Supabase, auto-flags suspicious policy events using deterministic rules.
+
+**Entry point**: `node src/index.js`
+
+- **Ingestion modules** (`/src/ingestion/`):
+  - `openAustralia.js` — Hansard debates, votes, member profiles (OpenAustralia API)
+  - `aecDonations.js` — AEC political donation CSVs
+  - `atoTax.js` — ATO corporate tax transparency data
+  - `mpInterests.js` — Register of Members Interests (HTML scraper)
+  - `theyVoteForYou.js` — Voting records (They Vote For You API)
+
+- **Rules engine** (`/src/rules/engine.js`): Runs four detection rules against each policy:
+  - `donationCorrelation.js` — Did donors to the deciding party benefit from this policy?
+  - `conflictOfInterest.js` — Did MPs voting on this have declared interests in affected industries?
+  - `resourceCapture.js` — Does this policy transfer public resources to private entities at below-market rates?
+  - `taxAvoidanceEnablement.js` — Does this policy create or preserve structures enabling tax avoidance?
+
+- **Scoring**: Each rule returns a score. Total >= 3 means the policy is flagged for analysis.
+
+- **Database**: Supabase (PostgreSQL). Schema in `src/db/schema.sql`.
+
+- **Seed scripts**: `src/seed.js` (small test set), `src/seed-full.js` (100+ real decisions)
+
+- **Supporting libs** (`/src/lib/`):
+  - `industryMap.js` — Maps company/donor names to industry buckets
+  - `policyKeywords.js` — Keyword filter for relevant parliamentary debates
+  - `stateStore.js` — Tracks last-run timestamps per ingestor
+  - `http.js` — Axios with retry + rate limiting
+  - `logger.js` — Structured console logger
+  - `env.js` — Environment variable validation
+
+### Frontend — Next.js 14 (`/frontend/`)
+
+Category timeline trees. Homepage shows a grid of policy categories. Each category links to a vertical timeline of every policy decision in that category, with donation links, conflict flags, and signal badges.
+
+- **Key components** (`/frontend/src/components/`):
+  - `CategoryGrid.js` — Homepage category tiles with counts and signal indicators
+  - `TimelineTree.js` — Vertical timeline per category with year markers
+  - `PolicyBranch.js` — Individual policy card within the timeline
+  - `CategoryHeader.js` — Stats header for category pages
+  - `YearNav.js` — Sticky sidebar year navigation (client component, IntersectionObserver)
+  - `StatsBar.js` — Top-level stats strip
+  - `SignalBadge.js` — Colour-coded signal strength indicator
+
+- **Pages**:
+  - `/` — Category grid homepage
+  - `/category/[slug]` — Timeline tree for a specific category
+  - `/policy/[id]` — Individual policy detail
+  - `/mp` — All MPs list
+  - `/mp/[id]` — Individual MP profile
+
+- **API routes** (`/frontend/src/app/api/`): All export `dynamic = 'force-dynamic'`
+
+- **Category metadata**: `/frontend/src/lib/categoryMeta.js` — Icons, colours, labels for all categories
+
+### Deployment
+
+- **Database**: Supabase (Singapore region) — `https://xexowrtfwbtuttqsuieh.supabase.co`
+- **Frontend**: Vercel — auto-deploys from `main` branch
+- **Repo**: `https://github.com/hjw808/au-policy`
+
+---
+
+## Data Sources
+
+| Source | Provides | Access |
+|---|---|---|
+| OpenAustralia | Parliamentary speeches, votes, member profiles | REST API with key |
+| They Vote For You | Voting records, policy positions | REST API with key |
+| AEC (Australian Electoral Commission) | Political donation disclosures | Annual CSV dumps |
+| ATO (Australian Taxation Office) | Corporate tax transparency data | Annual published data |
+| APH (Parliament House) | MP declared interests (Register of Interests) | HTML scrape |
+
+---
+
+## Analysis Standards
+
+When analysing ANY policy decision, ALWAYS follow this exact structure. Do not skip steps. Do not reorder.
+
+### Step 1: What Happened (facts only)
+State the policy, date, who introduced it, what it changed, and what it replaced (if anything). Use specific dollar amounts, percentages, and dates. Zero opinion in this section.
+
+### Step 2: Who Benefited Financially
+Name the companies, industries, or individuals who gained. Quantify the benefit where data exists (tax savings, contract values, subsidy amounts). Cross-reference with ATO corporate tax data to check if beneficiaries are paying tax.
+
+### Step 3: Who Donated
+List relevant political donations from AEC data. Include: donor name, amount, recipient party, financial year, and timing relative to the policy decision. Flag if donations increased before or after the decision.
+
+### Step 4: Who Had Conflicts of Interest
+Check the Register of Interests for MPs who voted on or championed this policy. Flag any declared shareholdings, directorships, or income from affected industries. Name the MPs specifically.
+
+### Step 5: International Comparison
+Compare with how at least one other country handles the same policy area. Preferred comparison countries: Norway, UK, NZ, Canada, Denmark, Germany. This shows whether Australia's approach is standard or an outlier. This step is NOT optional — it provides critical context.
+
+### Step 6: Signal Strength Assessment
+Rate the corruption signal:
+- **strong** — Direct financial link between donor/interest-holder and policy beneficiary, large sums, suspicious timing
+- **moderate** — Indirect links, pattern of donations from affected industry, some conflicts declared
+- **weak** — Industry donations exist but amounts are small or timing is unclear
+- **none** — No discernible financial connection found
+
+When in doubt, rate one level LOWER. Credibility depends on not overstating connections.
+
+### Step 7: Impact Score (1–10)
+Based on: dollar value affected, number of Australians impacted, duration of policy effect, degree of public resource transfer.
+
+---
+
+## Policy Categories
+
+These slugs are used throughout the system. Every policy MUST have one.
+
+| Slug | Label | Description |
+|---|---|---|
+| `mining` | Mining & Resources | Iron ore, coal, minerals royalties, export policies |
+| `tax` | Tax & Revenue | Income tax, GST, company tax, levies |
+| `oil_gas` | Energy & Gas | Petroleum, LNG, PRRT, energy market policies |
+| `property` | Housing & Property | Negative gearing, CGT, housing affordability, development |
+| `healthcare` | Healthcare | PBS, private health insurance, hospital funding |
+| `superannuation` | Superannuation | Super contribution caps, tax concessions, SG rate |
+| `defence` | Defence | Military contracts, procurement, foreign military sales |
+| `privatisation` | Privatisation | Sale of public assets (Telstra, Medibank, airports, ports) |
+| `trade` | Trade & Tariffs | Free trade agreements, tariffs, export subsidies |
+| `subsidies` | Subsidies & Grants | Industry subsidies, R&D incentives, regional grants |
+| `financial_services` | Financial Services | Banking regulation, APRA, responsible lending |
+| `environment` | Environment | Carbon pricing, EPBC Act, water rights, renewables |
+
+---
+
+## Tone and Voice Rules
+
+1. **Factual, not partisan.** Both Labor and Coalition receive equal scrutiny. If analysis only examines one party's donors, it is incomplete — go back and check the other side.
+2. **Plain language.** Write "BHP donated $1.2M to the Liberal Party in the year before they cut the mining tax" — not "a temporal correlation between extractive industry contributions and subsequent legislative modifications."
+3. **Let the data speak.** Present numbers and connections. Let people draw their own conclusions.
+4. **No sensationalism.** Never use "corruption" or "scandal" in analysis text. Use "signal strength" and "conflict of interest" — these are factual descriptors.
+5. **Always attribute.** Cite the data source: AEC disclosure year, APH register entry, ATO transparency report year, Hansard date.
+6. **Specific over vague.** "$4.2M from 3 mining companies in 2019-21" beats "significant donations from the mining industry."
+
+---
+
+## Rules for AI Agents
+
+These rules apply to ALL AI interactions with this project — whether adding data, writing analysis, building features, or answering questions.
+
+### Data Integrity
+1. **Never fabricate data.** If a real donation figure, vote record, or policy detail is not available, mark it as needing verification. Do not invent plausible-sounding numbers.
+2. **Always cross-reference.** Every policy entry should link to: donations (by donor industry + timing), member interests (by MP + industry), and company tax data (by beneficiary). If a cross-reference can't be made, note it explicitly.
+3. **Date everything.** "BHP donated to the Liberal Party" is useless. "BHP donated $1.2M to the Liberal Party in 2020-21 (AEC disclosure)" is useful.
+
+### Analysis Quality
+4. **Use all four rules.** Every policy must be scored by: donation correlation, conflict of interest, resource capture, and tax avoidance enablement. Don't skip any.
+5. **International comparisons are mandatory.** They show whether Australia's approach is normal or an outlier — critical context for the public.
+6. **Keep signal assessments conservative.** When uncertain, rate one level lower. Overstating damages credibility more than understating.
+7. **Both parties, always.** If a policy analysis only examines one party's donors, it's incomplete.
+
+### Technical Standards
+8. **Respect the category system.** Every policy gets exactly one category from the list above.
+9. **All pages force-dynamic.** Never add `revalidate` or static generation to pages that query Supabase.
+10. **Upserts only.** All database writes use upsert with conflict resolution. Never error on duplicates. Never lose existing data.
+11. **Rate limit external APIs.** OpenAustralia: 500ms between calls. APH: 1s between calls. AEC/ATO: no limit needed (CSV downloads).
+
+### When Adding New Policies
+12. Research the policy using government sources first (Hansard, legislation.gov.au, parliament.gov.au).
+13. Find the corresponding AEC donation data for the relevant industry and time period.
+14. Check the Register of Interests for key MPs involved.
+15. Find at least one international comparison.
+16. Write the analysis following the 7-step structure above.
+17. Assign a category, signal strength, and impact score.
+18. Include the data in the `seed-full.js` format for reproducibility.
 
 ---
 
 ## Environment Variables
 
-Create both `.env` and `.env.example`:
-
-```
-SUPABASE_URL=
-SUPABASE_SERVICE_KEY=
-OPENAUSTRALIA_API_KEY=
-LOG_LEVEL=info
-DRY_RUN=false
-```
-
-On startup: validate all required vars are present. If any missing, print a
-clear error message listing which vars are absent and exit with code 1.
-Never silently fall through with missing config.
+| Variable | Location | Purpose |
+|---|---|---|
+| `SUPABASE_URL` | Backend `.env` | Database connection (same as NEXT_PUBLIC_SUPABASE_URL) |
+| `SUPABASE_SERVICE_KEY` | Backend `.env` + Vercel | Full DB access, bypasses RLS |
+| `NEXT_PUBLIC_SUPABASE_URL` | Vercel | Client-accessible Supabase URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Vercel | Client-side read access |
+| `OPENAUSTRALIA_API_KEY` | Backend `.env` | OpenAustralia API |
+| `TVFY_API_KEY` | Backend `.env` | They Vote For You API |
 
 ---
 
-## Project Structure
+## File Conventions
 
-```
-/
-├── CLAUDE.md                   (this file — build instructions)
-├── ANALYSIS_TASK.md            (Claude Code reads this at analysis time)
-├── package.json
-├── .env
-├── .env.example
-└── src/
-    ├── index.js                Entry point — runs ingestion then rules engine
-    ├── db/
-    │   ├── client.js           Supabase singleton (export one instance)
-    │   ├── schema.sql          Full schema — printed to console on first run
-    │   └── queries.js          All DB operations as named async functions
-    ├── ingestion/
-    │   ├── openAustralia.js    Hansard debates, votes, members
-    │   ├── aecDonations.js     AEC political donation CSVs
-    │   ├── atoTax.js           ATO corporate tax transparency CSV
-    │   └── mpInterests.js      Register of Members Interests HTML scraper
-    ├── rules/
-    │   ├── engine.js           Runs all rules, writes scores to DB
-    │   ├── donationCorrelation.js
-    │   ├── conflictOfInterest.js
-    │   ├── taxAvoidanceEnablement.js
-    │   └── resourceCapture.js
-    └── lib/
-        ├── http.js             Axios instance with retry + rate limiting
-        ├── stateStore.js       Reads/writes last_run timestamps to Supabase
-        └── logger.js           Structured console logger
-```
+- Backend: `/src/` — Node.js, CommonJS (`require`), `"type": "module"` in package.json
+- Frontend: `/frontend/src/` — Next.js 14, React Server Components by default
+- Client components: Only when needed (e.g., `YearNav.js` uses `'use client'` for IntersectionObserver)
+- API routes: `/frontend/src/app/api/` — all export `dynamic = 'force-dynamic'`
+- Seed scripts: `/src/seed.js` (test), `/src/seed-full.js` (production data)
 
 ---
 
-## Database Schema (`src/db/schema.sql`)
+## Governing Principle
 
-Write this as a standalone SQL file. On first run (when tables do not exist),
-print it to console with instructions to paste into the Supabase SQL editor.
-Do NOT auto-execute — the user runs it once manually in Supabase.
-
-```sql
-create table if not exists system_state (
-  key text primary key,
-  value text,
-  updated_at timestamptz default now()
-);
-
-create table if not exists members (
-  id text primary key,
-  name text not null,
-  party text,
-  electorate text,
-  role text,
-  raw_json jsonb,
-  updated_at timestamptz default now()
-);
-
-create table if not exists policies (
-  id uuid primary key default gen_random_uuid(),
-  external_id text unique not null,
-  date date,
-  title text not null,
-  category text,
-  source text,
-  source_url text,
-  raw_text text,
-  matched_keywords jsonb default '[]',
-  status text default 'pending',
-  flag_score int default 0,
-  flag_reasons jsonb default '[]',
-  retry_count int default 0,
-  ingested_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
-create table if not exists votes (
-  policy_id uuid references policies(id) on delete cascade,
-  member_id text references members(id),
-  vote text,
-  primary key (policy_id, member_id)
-);
-
-create table if not exists donations (
-  id uuid primary key default gen_random_uuid(),
-  external_id text unique,
-  donor_name text,
-  donor_industry text,
-  recipient_party text,
-  amount_aud numeric,
-  financial_year text,
-  source_url text,
-  created_at timestamptz default now()
-);
-
-create table if not exists member_interests (
-  id uuid primary key default gen_random_uuid(),
-  member_id text references members(id),
-  interest_type text,
-  description text,
-  company_name text,
-  industry text,
-  declared_date date,
-  created_at timestamptz default now()
-);
-
-create table if not exists companies (
-  id uuid primary key default gen_random_uuid(),
-  name text not null,
-  industry text,
-  total_income_aud numeric,
-  tax_paid_aud numeric,
-  effective_tax_rate numeric,
-  financial_year text,
-  created_at timestamptz default now(),
-  unique(name, financial_year)
-);
-
-create table if not exists timeline_events (
-  id uuid primary key default gen_random_uuid(),
-  policy_id uuid references policies(id),
-  date date,
-  title text,
-  category text,
-  impact_score numeric,
-  confidence_score numeric,
-  primary_beneficiaries jsonb,
-  disadvantaged_groups jsonb,
-  revenue_impact text,
-  corporate_advantage boolean,
-  conflict_of_interest_flags jsonb,
-  linked_donations jsonb,
-  alternative_policy text,
-  comparison_country text,
-  comparison_approach text,
-  comparison_outcome text,
-  analysis_json jsonb,
-  generated_at timestamptz default now()
-);
-
-create index if not exists idx_policies_status on policies(status);
-create index if not exists idx_policies_flag_score on policies(flag_score desc);
-create index if not exists idx_donations_industry on donations(donor_industry);
-create index if not exists idx_donations_party on donations(recipient_party);
-create index if not exists idx_interests_industry on member_interests(industry);
-create index if not exists idx_timeline_date on timeline_events(date desc);
-```
-
----
-
-## State Store (`src/lib/stateStore.js`)
-
-Every ingestor checks when it last ran before fetching anything.
-Read from and write to the `system_state` table.
-
-Keys used:
-- `'last_openaustralia_date'` — value: `'YYYY-MM-DD'`
-- `'last_aec_year'` — value: `'2023-24'`
-- `'last_ato_year'` — value: `'2023-24'`
-- `'last_mpinterests_run'` — value: ISO timestamp
-
-Export two functions:
-```javascript
-export async function getState(key)          // returns string | null
-export async function setState(key, value)   // upserts, returns void
-```
-
-On null (first run), ingestors fall back to safe defaults:
-- OpenAustralia: `'2010-01-01'`
-- AEC / ATO: `'2015-16'`
-- MP Interests: always full scrape (small dataset)
-
----
-
-## Industry Bucket Map
-
-Used by both ingestion and rules engine. Define once in `src/lib/industryMap.js`
-and import everywhere needed.
-
-```javascript
-export const industryMap = [
-  { keywords: ['mining', 'resources', 'coal', 'iron ore', 'minerals'],   industry: 'mining' },
-  { keywords: ['petroleum', 'gas', 'lng', 'oil', 'woodside', 'santos'],  industry: 'oil_gas' },
-  { keywords: ['bank', 'financ', 'invest', 'capital', 'insurance'],      industry: 'financial' },
-  { keywords: ['property', 'real estate', 'developer', 'construction'],  industry: 'property' },
-  { keywords: ['pharma', 'health', 'medical', 'hospital'],               industry: 'healthcare' },
-  { keywords: ['media', 'news', 'broadcast', 'publish'],                 industry: 'media' },
-  { keywords: ['union', 'workers', 'labour', 'employees'],               industry: 'union' },
-  { keywords: ['agriculture', 'farm', 'pastoral', 'wool', 'grain'],      industry: 'agriculture' },
-  { keywords: ['defence', 'weapons', 'military', 'aerospace'],           industry: 'defence' },
-  { keywords: ['tech', 'software', 'digital', 'telecom'],                industry: 'technology' },
-]
-// Default bucket: 'other'
-
-export function classifyIndustry(text) {
-  const lower = text.toLowerCase()
-  for (const bucket of industryMap) {
-    if (bucket.keywords.some(k => lower.includes(k))) return bucket.industry
-  }
-  return 'other'
-}
-```
-
----
-
-## Policy Keyword Filter
-
-Also define once and import everywhere. Only ingest debates containing these:
-
-```javascript
-export const policyKeywords = [
-  'tax', 'royalt', 'concession', 'exemption', 'mining', 'resources',
-  'superannuation', 'negative gearing', 'capital gains', 'corporate',
-  'donation', 'lobbying', 'export', 'petroleum', 'gas', 'coal',
-  'pharmaceutical', 'defence contract', 'privatis', 'levy', 'tariff',
-  'subsid', 'rebate', 'deduction', 'write-off'
-]
-
-export function matchKeywords(text) {
-  const lower = text.toLowerCase()
-  return policyKeywords.filter(k => lower.includes(k))
-}
-```
-
-Store matched keywords in `policies.matched_keywords` for use by the rules engine.
-
----
-
-## Ingestion: OpenAustralia (`src/ingestion/openAustralia.js`)
-
-Base URL: `https://www.openaustralia.org.au/api/`
-
-Steps:
-1. Fetch current members: `getMPs?key=KEY&output=js`
-   Upsert all to `members` table. Map fields: `member_id` → id, `full_name` → name,
-   `party` → party, `constituency` → electorate.
-
-2. Get `last_openaustralia_date` from state store (default: `'2010-01-01'`)
-
-3. Iterate from that date to yesterday, one day at a time:
-   - `getDebates?key=KEY&date=YYYY-MM-DD&type=representatives&output=js`
-   - `getDebates?key=KEY&date=YYYY-MM-DD&type=senate&output=js`
-
-4. For each debate returned:
-   - Run `matchKeywords()` against the debate body text
-   - If no matches: skip
-   - If matches: upsert to `policies` table
-     - `external_id`: debate `gid` field
-     - `title`: debate `subsection_title` or `title`
-     - `date`: debate date
-     - `source`: `'openaustralia'`
-     - `raw_text`: concatenated speech bodies (truncate to 8000 chars)
-     - `matched_keywords`: array of matched keywords
-     - `category`: infer from keywords — if 'mining'/'royalt' → 'resources',
-       if 'tax'/'concession' → 'tax', if 'superannuation' → 'superannuation', etc.
-
-5. Rate limit: sleep 500ms between API calls. This API is free, treat it gently.
-
-6. After all dates processed, update `last_openaustralia_date` to yesterday.
-
-7. Log: `[INGEST:OA] Processed X dates, ingested Y policies, skipped Z`
-
----
-
-## Ingestion: AEC Donations (`src/ingestion/aecDonations.js`)
-
-The AEC publishes annual donor disclosure CSVs.
-
-URL pattern to try:
-```
-https://transparency.aec.gov.au/Download/DownloadAnnualDonations
-```
-
-If direct download fails, fall back to scraping the page at:
-`https://transparency.aec.gov.au/AnnualDonation` to find current CSV links.
-
-Steps:
-1. Get `last_aec_year` from state store (default: `'2015-16'`)
-2. Determine which years are missing up to the most recent available
-3. For each missing year, download and parse the CSV
-4. CSV columns vary by year — handle both these common formats:
-   - Format A: `DonorName, RecipientName, DonorState, Amount, FinancialYear`
-   - Format B: `Donor, Recipient, Amount, Period, State`
-   Use column header detection to handle both.
-5. For each row:
-   - `external_id`: `{year}-{rowIndex}` (or hash of donor+recipient+amount+year)
-   - `donor_industry`: run `classifyIndustry(donor_name)`
-   - Infer `recipient_party` from recipient name:
-     `if lower includes 'liberal' → 'Liberal', 'labor'/'labour' → 'Labor',
-      'national' → 'Nationals', 'green' → 'Greens'`, etc.
-   - Upsert with dedup on `external_id`
-6. Update `last_aec_year` to most recent processed year
-7. Log: `[INGEST:AEC] Processed X years, ingested Y donations`
-
----
-
-## Ingestion: ATO Tax (`src/ingestion/atoTax.js`)
-
-Source: data.gov.au corporate tax transparency dataset.
-
-1. Fetch dataset listing: `https://data.gov.au/api/3/action/package_show?id=corporate-transparency`
-2. Extract the most recent CSV resource URL from the response
-3. Download and parse with csv-parse
-4. For each row extract: entity name, total income, tax payable, effective rate, year
-5. Upsert to `companies` table, dedup on `(name, financial_year)`
-6. Also run `classifyIndustry(entity_name)` to populate `industry` column
-7. Log: `[INGEST:ATO] Ingested X company records for year Y`
-
----
-
-## Ingestion: MP Interests (`src/ingestion/mpInterests.js`)
-
-Source: `https://www.aph.gov.au/Senators_and_Members/Members/Register`
-
-This page lists links to each member's individual interest declaration.
-
-Steps:
-1. Fetch the index page, extract all member declaration links with cheerio
-2. For each member link, fetch their individual page
-3. Parse sections — interests are grouped under headings like:
-   "Shares and similar interests", "Real estate", "Directorships"
-4. For each interest found:
-   - `interest_type`: map heading to `'shares'|'property'|'board'|'other'`
-   - `description`: raw text of the item
-   - `company_name`: extract first entity/company name mentioned
-   - `industry`: `classifyIndustry(company_name + ' ' + description)`
-5. Match member to `members` table by name (fuzzy: lowercase + trim)
-   If no match found, log warning and skip — do not insert orphaned interests
-6. Delete existing interests for this member before inserting fresh ones
-   (register changes, re-scraping is the cleanest approach)
-7. Rate limit: 1 request per second — APH is a government server
-8. Log: `[INGEST:MPI] Scraped X members, inserted Y interests`
-
----
-
-## Rules Engine (`src/rules/engine.js`)
-
-Runs after all ingestion completes. Processes all `status = 'pending'` policies.
-
-```javascript
-export async function runRulesEngine() {
-  const pending = await db.getPendingPolicies()  // no limit — process all
-
-  let flagged = 0, skipped = 0
-
-  for (const policy of pending) {
-    const results = await Promise.all([
-      donationCorrelation(policy),
-      conflictOfInterest(policy),
-      taxAvoidanceEnablement(policy),
-      resourceCapture(policy),
-    ])
-
-    const totalScore = results.reduce((sum, r) => sum + r.score, 0)
-    const reasons = results.filter(r => r.triggered).map(r => ({
-      rule: r.rule,
-      score: r.score,
-      detail: r.detail,
-    }))
-
-    const newStatus = totalScore >= 3 ? 'flagged' : 'skipped'
-    await db.updatePolicyFlags(policy.id, totalScore, reasons, newStatus)
-
-    if (newStatus === 'flagged') flagged++
-    else skipped++
-  }
-
-  logger.info(`[RULES] Flagged: ${flagged} | Skipped: ${skipped}`)
-}
-```
-
-Each rule module exports a default async function with this signature:
-```javascript
-export default async function ruleName(policy) {
-  return {
-    rule: 'rule_name',
-    triggered: boolean,
-    score: number,
-    detail: string,   // human-readable explanation of what was found
-  }
-}
-```
-
----
-
-### Rule 1: Donation Correlation
-
-Query donations where `donor_industry` matches `policy.category`
-and `recipient_party` was the governing party when policy passed
-and donation `financial_year` is within 3 years before policy year.
-
-Map policy categories to governing party from this lookup:
-```javascript
-// Approximate — based on election history
-const governingParty = (year) => {
-  if (year >= 2022) return 'Labor'
-  if (year >= 2013) return 'Liberal'
-  if (year >= 2007) return 'Labor'
-  return 'Liberal'
-}
-```
-
-Scoring:
-- Any matching donation found: +2
-- Total donations in window > $100,000: +1
-- Total donations in window > $500,000: +2
-- Three or more distinct donors same industry: +1
-
-Detail string: `"3 donations totalling $1.2M from oil_gas industry to Liberal Party in 2019-21"`
-
----
-
-### Rule 2: Conflict of Interest
-
-Join `votes` → `members` → `member_interests` where:
-- `vote = 'yes'` on this policy
-- `member_interests.industry` matches `policy.category`
-
-Scoring:
-- 1 MP with conflict: +3
-- 3+ MPs with conflicts: +5
-- Any MP with role containing 'Minister': +4
-
-Detail string: `"2 yes-voting MPs hold shares in mining sector: John Smith (Minister), Jane Doe"`
-
----
-
-### Rule 3: Tax Avoidance Enablement
-
-Query `companies` where:
-- `industry` matches `policy.category`
-- `financial_year` = year before policy
-- `effective_tax_rate < 0.05` (less than 5%)
-
-Also check if any of these companies appear as `donor_name` in `donations`.
-
-Scoring:
-- Any zero-tax companies in beneficiary industry: +2
-- 3+ zero-tax companies: +1 additional
-- Zero-tax company also appears in donations table: +2 additional
-
-Detail string: `"4 companies in financial sector paid <5% tax in 2020-21, 2 also appear as donors"`
-
----
-
-### Rule 4: Resource Capture
-
-Only triggers when:
-- `policy.category IN ('mining', 'oil_gas', 'agriculture')`
-- AND `policy.matched_keywords` contains any of: `['royalt', 'export', 'concession', 'levy']`
-
-Scoring:
-- Conditions met: +4
-- Donation correlation also triggered for same policy: +2 additional
-
-Detail string: `"Resources policy with royalty/export keywords — classic resource capture pattern"`
-
----
-
-## Entry Point (`src/index.js`)
-
-```javascript
-import 'dotenv/config'
-import { validateEnv } from './lib/env.js'
-import { checkTablesExist } from './db/queries.js'
-import { readFileSync } from 'fs'
-import { ingestOpenAustralia } from './ingestion/openAustralia.js'
-import { ingestAECDonations } from './ingestion/aecDonations.js'
-import { ingestATOTax } from './ingestion/atoTax.js'
-import { ingestMPInterests } from './ingestion/mpInterests.js'
-import { runRulesEngine } from './rules/engine.js'
-import { getRunSummary } from './db/queries.js'
-import logger from './lib/logger.js'
-
-async function main() {
-  validateEnv(['SUPABASE_URL', 'SUPABASE_SERVICE_KEY', 'OPENAUSTRALIA_API_KEY'])
-
-  const tablesExist = await checkTablesExist()
-  if (!tablesExist) {
-    const schema = readFileSync('./src/db/schema.sql', 'utf8')
-    console.log('\n' + '='.repeat(50))
-    console.log('FIRST RUN — Schema setup required.')
-    console.log('Paste the following into your Supabase SQL editor:\n')
-    console.log(schema)
-    console.log('='.repeat(50))
-    console.log('Then re-run: node src/index.js\n')
-    process.exit(0)
-  }
-
-  logger.info('[INGEST] Starting ingestion run')
-
-  // Run each ingestor independently — one failing does not stop others
-  for (const [name, fn] of [
-    ['OpenAustralia', ingestOpenAustralia],
-    ['AEC Donations', ingestAECDonations],
-    ['ATO Tax', ingestATOTax],
-    ['MP Interests', ingestMPInterests],
-  ]) {
-    try {
-      await fn()
-    } catch (err) {
-      logger.error(`[INGEST:${name}] Failed: ${err.message}`)
-    }
-  }
-
-  logger.info('[RULES] Running rules engine')
-  await runRulesEngine()
-
-  const summary = await getRunSummary()
-  console.log('\n' + '='.repeat(50))
-  console.log(`RUN COMPLETE`)
-  console.log(`Ingested : ${summary.ingested_this_run} new policies`)
-  console.log(`Flagged  : ${summary.total_flagged} total flagged`)
-  console.log(`Pending  : ${summary.total_pending} pending analysis`)
-  console.log(`Complete : ${summary.total_complete} analysed`)
-  console.log('='.repeat(50) + '\n')
-
-  // Print Cowork setup instructions on very first successful run
-  if (summary.total_complete === 0 && summary.total_flagged > 0) {
-    console.log('NEXT STEP: Run analysis with Claude Code:')
-    console.log('  claude "Read ANALYSIS_TASK.md and process flagged policies"\n')
-  }
-}
-
-main().catch(err => {
-  logger.error('[FATAL]', err.message)
-  process.exit(1)
-})
-```
-
----
-
-## Error Handling Rules
-
-1. Never crash the process — wrap each ingestor in try/catch in main()
-2. Network errors: retry 3x with exponential backoff (1s, 2s, 4s), then skip
-3. Parse errors: log the offending row with enough context to debug, then continue
-4. Supabase errors: log and skip that record — never lose previously good data
-5. Upserts must use `onConflict` ignore/update — never error on duplicates
-
----
-
-## Build Order for Claude Code
-
-1. `package.json` (include all deps: @supabase/supabase-js, axios, csv-parse,
-   cheerio, dotenv)
-2. `.env.example`
-3. `src/db/schema.sql`
-4. `src/lib/logger.js`
-5. `src/lib/http.js` (axios with retry)
-6. `src/lib/industryMap.js`
-7. `src/lib/policyKeywords.js`
-8. `src/db/client.js`
-9. `src/db/queries.js`
-10. `src/lib/stateStore.js`
-11. `src/ingestion/openAustralia.js`
-12. `src/ingestion/aecDonations.js`
-13. `src/ingestion/atoTax.js`
-14. `src/ingestion/mpInterests.js`
-15. `src/rules/donationCorrelation.js`
-16. `src/rules/conflictOfInterest.js`
-17. `src/rules/taxAvoidanceEnablement.js`
-18. `src/rules/resourceCapture.js`
-19. `src/rules/engine.js`
-20. `src/index.js`
-
-After building all files, verify by running: `node src/index.js`
-Expected output on first run: schema printed to console, exits cleanly.
+If a connection between money and policy exists in the public record, surface it clearly. If it doesn't exist, don't manufacture it. Trust comes from accuracy, not volume.
