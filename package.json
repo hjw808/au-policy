@@ -1,0 +1,23 @@
+{
+  "name": "au-policy-tracker",
+  "version": "1.0.0",
+  "description": "Australian Policy Accountability System — Ingestion & Rules Engine",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "ingest": "node src/index.js",
+    "dry-run": "DRY_RUN=true node src/index.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "axios": "^1.6.0",
+    "axios-retry": "^4.0.0",
+    "csv-parse": "^5.5.0",
+    "cheerio": "^1.0.0-rc.12",
+    "dotenv": "^16.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

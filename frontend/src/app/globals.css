@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --navy-900: #0a0e1a;
+  --navy-800: #111827;
+  --navy-700: #1a1f35;
+}
+
+body {
+  background: var(--navy-900);
+  color: #e0e4ef;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--navy-900); }
+::-webkit-scrollbar-thumb { background: #2a3050; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #3a4060; }
+
+/* Smooth scroll */
+html { scroll-behavior: smooth; }
+
+/* Link styling */
+a { transition: color 0.15s ease; }
