@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { formatCurrency, getCategoryLabel } from '@/lib/helpers'
 
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 async function getMemberData(id) {
   const supabase = createServerClient()

@@ -5,7 +5,7 @@ import SignalBadge from '@/components/SignalBadge'
 import ImpactMeter from '@/components/ImpactMeter'
 import { formatDate, formatCurrency, getCategoryLabel } from '@/lib/helpers'
 
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 async function getPolicyData(id) {
   const supabase = createServerClient()

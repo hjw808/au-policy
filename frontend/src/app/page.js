@@ -3,7 +3,7 @@ import PolicyCard from '@/components/PolicyCard'
 import StatsBar from '@/components/StatsBar'
 import Link from 'next/link'
 
-export const revalidate = 3600 // Revalidate every hour
+export const dynamic = 'force-dynamic'
 
 async function getHomeData() {
   const supabase = createServerClient()

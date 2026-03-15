@@ -62,7 +62,7 @@ export default function RootLayout({ children }) {
               </p>
               <div className="flex gap-4 text-sm text-gray-500">
                 <Link href="/about" className="hover:text-gray-300">Methodology</Link>
-                <a href="https://github.com" target="_blank" rel="noopener" className="hover:text-gray-300">Source Code</a>
+                <a href="https://github.com/hjw808/au-policy" target="_blank" rel="noopener" className="hover:text-gray-300">Source Code</a>
               </div>
             </div>
           </div>

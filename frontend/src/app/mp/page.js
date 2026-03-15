@@ -1,7 +1,7 @@
 import { createServerClient } from '@/lib/supabase'
 import Link from 'next/link'
 
-export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 async function getMembers() {
   const supabase = createServerClient()
