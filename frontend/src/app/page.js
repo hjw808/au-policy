@@ -1,47 +1,79 @@
 import { createServerClient } from '@/lib/supabase'
-import PolicyCard from '@/components/PolicyCard'
+import CategoryGrid from '@/components/CategoryGrid'
 import StatsBar from '@/components/StatsBar'
+import SignalBadge from '@/components/SignalBadge'
 import Link from 'next/link'
+import { getCategoryMeta } from '@/lib/categoryMeta'
+import { formatDate } from '@/lib/helpers'
 
 export const dynamic = 'force-dynamic'
 
 async function getHomeData() {
   const supabase = createServerClient()
 
-  const [eventsRes, statsRes, strongRes] = await Promise.all([
+  const [policiesRes, eventsRes, statsRes] = await Promise.all([
+    supabase
+      .from('policies')
+      .select('category, flag_score, status')
+      .in('status', ['flagged', 'complete']),
     supabase
       .from('timeline_events')
-      .select('*')
-      .order('date', { ascending: false })
-      .limit(20),
+      .select('category, impact_score, analysis_json, date, title, policy_id')
+      .order('impact_score', { ascending: false }),
     Promise.all([
       supabase.from('policies').select('*', { count: 'exact', head: true }).eq('status', 'complete'),
       supabase.from('members').select('*', { count: 'exact', head: true }),
       supabase.from('donations').select('*', { count: 'exact', head: true }),
       supabase.from('timeline_events').select('*', { count: 'exact', head: true }).gte('impact_score', 7),
     ]),
-    supabase
-      .from('timeline_events')
-      .select('*')
-      .gte('impact_score', 7)
-      .order('impact_score', { ascending: false })
-      .limit(5),
   ])
 
+  const policies = policiesRes.data || []
+  const events = eventsRes.data || []
+
+  // Build category summaries
+  const cats = {}
+  for (const p of policies) {
+    const cat = p.category || 'general'
+    if (!cats[cat]) cats[cat] = { slug: cat, policyCount: 0, donationTotal: 0, strongestSignal: 'none', maxImpact: 0 }
+    cats[cat].policyCount++
+  }
+  for (const e of events) {
+    const cat = e.category || 'general'
+    if (!cats[cat]) cats[cat] = { slug: cat, policyCount: 0, donationTotal: 0, strongestSignal: 'none', maxImpact: 0 }
+    const signal = e.analysis_json?.corruption_signal_strength || 'none'
+    const rank = { strong: 3, moderate: 2, weak: 1, none: 0 }
+    if ((rank[signal] || 0) > (rank[cats[cat].strongestSignal] || 0)) {
+      cats[cat].strongestSignal = signal
+    }
+    if ((e.impact_score || 0) > cats[cat].maxImpact) {
+      cats[cat].maxImpact = e.impact_score || 0
+    }
+  }
+
+  const categories = Object.values(cats)
+    .filter(c => c.policyCount > 0)
+    .sort((a, b) => b.policyCount - a.policyCount)
+
+  // Top impact highlights
+  const highlights = events
+    .filter(e => e.impact_score >= 6)
+    .slice(0, 5)
+
   return {
-    events: eventsRes.data || [],
+    categories,
+    highlights,
     stats: {
       total_complete: statsRes[0].count || 0,
       total_members: statsRes[1].count || 0,
       total_donations: statsRes[2].count || 0,
       strong_signals: statsRes[3].count || 0,
     },
-    topImpact: strongRes.data || [],
   }
 }
 
 export default async function HomePage() {
-  const { events, stats, topImpact } = await getHomeData()
+  const { categories, highlights, stats } = await getHomeData()
 
   return (
     <div>
@@ -53,55 +85,61 @@ export default async function HomePage() {
           </span>
         </h1>
         <p className="text-lg text-gray-400 max-w-2xl mx-auto mb-2">
-          Tracking Australian parliamentary decisions — who benefited, who donated, and who had conflicts of interest.
+          30 years of Australian parliamentary decisions. Who benefited, who donated, and who had conflicts of interest.
         </p>
         <p className="text-sm text-gray-600">
-          Built with public data from OpenAustralia, AEC, ATO, and Parliament House.
+          Pick a category below to explore its policy timeline.
         </p>
       </section>
 
       {/* Stats */}
-      <section className="mb-12">
+      <section className="mb-10">
         <StatsBar stats={stats} />
       </section>
 
-      {/* Highest Impact */}
-      {topImpact.length > 0 && (
+      {/* Category Grid */}
+      <section className="mb-12">
+        <h2 className="text-xl font-bold text-gray-200 mb-5">Explore by Category</h2>
+        <CategoryGrid categories={categories} />
+      </section>
+
+      {/* Highlights */}
+      {highlights.length > 0 && (
         <section className="mb-12">
-          <h2 className="text-xl font-bold text-gray-200 mb-4">Highest Impact Decisions</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {topImpact.map(event => (
-              <PolicyCard key={event.id} event={event} />
-            ))}
+          <h2 className="text-xl font-bold text-gray-200 mb-5">Highest Impact Decisions</h2>
+          <div className="space-y-3">
+            {highlights.map((event, i) => {
+              const signal = event.analysis_json?.corruption_signal_strength || 'none'
+              const meta = getCategoryMeta(event.category)
+              return (
+                <Link key={event.policy_id || i} href={`/policy/${event.policy_id}`}>
+                  <div className="bg-[#111827] border border-white/5 rounded-xl p-4 hover:border-blue-500/30 transition-all flex items-center gap-4 mb-3">
+                    <span className="text-2xl">{meta.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                        <span className="text-xs text-gray-500">{formatDate(event.date)}</span>
+                        <span className="text-xs px-2 py-0.5 rounded bg-white/5 text-gray-400">
+                          {meta.label}
+                        </span>
+                        <SignalBadge strength={signal} size="sm" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-200 truncate">{event.title}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-xl font-bold" style={{
+                        color: event.impact_score >= 7 ? '#ef4444' : '#f97316'
+                      }}>
+                        {event.impact_score}
+                      </span>
+                      <p className="text-xs text-gray-600">impact</p>
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
           </div>
         </section>
       )}
-
-      {/* Recent Timeline */}
-      <section className="mb-12">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-200">Recent Analysed Decisions</h2>
-          <Link href="/search" className="text-sm text-blue-400 hover:text-blue-300">
-            View all &rarr;
-          </Link>
-        </div>
-
-        {events.length === 0 ? (
-          <div className="bg-[#111827] rounded-xl p-12 text-center border border-white/5">
-            <p className="text-3xl mb-4">&#128202;</p>
-            <p className="text-gray-400 mb-2">No policies analysed yet.</p>
-            <p className="text-sm text-gray-600">
-              Run the ingestion pipeline and Claude analysis to populate the timeline.
-            </p>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 gap-4">
-            {events.map(event => (
-              <PolicyCard key={event.id} event={event} />
-            ))}
-          </div>
-        )}
-      </section>
 
       {/* CTA */}
       <section className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-2xl p-8 text-center border border-white/5">
@@ -115,6 +153,9 @@ export default async function HomePage() {
           </Link>
           <Link href="/money" className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-sm font-medium transition-colors border border-white/10">
             Follow the Money
+          </Link>
+          <Link href="/mp" className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-sm font-medium transition-colors border border-white/10">
+            Browse MPs
           </Link>
         </div>
       </section>
