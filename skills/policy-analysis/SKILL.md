@@ -27,6 +27,7 @@ For EACH policy, execute these steps in order. Do not skip any step.
 - Search for the legislation or policy decision on parliament.gov.au, legislation.gov.au, or via web search
 - Confirm: exact title, date introduced, date passed, which chamber, which government
 - Record: what it changed, what it replaced (if anything), key dollar figures
+- **The output for Step 1 must lead with the change in one plain-English sentence.** What was the rule before? What is it now? A reader who only reads sentence one should instantly understand what happened. Background comes after.
 
 ### 2. Identify Beneficiaries
 - Who gained financially from this policy?
@@ -53,8 +54,12 @@ For EACH policy, execute these steps in order. Do not skip any step.
 ### 5. Find International Comparison
 - Pick the most relevant comparison country from: Norway, UK, NZ, Canada, Denmark, Germany, Sweden, Ireland
 - Research how they handle the same policy area
-- Focus on: tax rate comparison, regulatory approach, public benefit outcomes
-- Note: is Australia's approach standard or an outlier?
+- **DO NOT just list rates and statistics.** Tell the story:
+  - What did the country actually do? (the decision)
+  - Why did they do it? (the reasoning)
+  - What was the outcome for their citizens? (the result — jobs, savings, services, wealth fund, etc.)
+- End with ONE plain-language sentence comparing to Australia (e.g., "Norway's citizens each have $350,000 saved in their sovereign wealth fund from oil profits. Australians have nothing equivalent.")
+- The reader should feel the difference, not just see numbers.
 
 ### 6. Assess Signal Strength
 Apply this rubric strictly:

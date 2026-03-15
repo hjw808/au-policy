@@ -96,7 +96,7 @@ Category timeline trees. Homepage shows a grid of policy categories. Each catego
 When analysing ANY policy decision, ALWAYS follow this exact structure. Do not skip steps. Do not reorder.
 
 ### Step 1: What Happened (facts only)
-State the policy, date, who introduced it, what it changed, and what it replaced (if anything). Use specific dollar amounts, percentages, and dates. Zero opinion in this section.
+**First sentence must be the change in plain English.** What was the rule before? What is it now? A reader should understand the core change in one sentence without any background. THEN add date, who introduced it, and any key context (2-3 more sentences max). Zero opinion. Example: "The government removed the 22.5% tax on iron ore and coal mining profits. Companies mining these resources no longer pay any super-profit tax above the standard company rate."
 
 ### Step 2: Who Benefited Financially
 Name the companies, industries, or individuals who gained. Quantify the benefit where data exists (tax savings, contract values, subsidy amounts). Cross-reference with ATO corporate tax data to check if beneficiaries are paying tax.
@@ -108,7 +108,9 @@ List relevant political donations from AEC data. Include: donor name, amount, re
 Check the Register of Interests for MPs who voted on or championed this policy. Flag any declared shareholdings, directorships, or income from affected industries. Name the MPs specifically.
 
 ### Step 5: International Comparison
-Compare with how at least one other country handles the same policy area. Preferred comparison countries: Norway, UK, NZ, Canada, Denmark, Germany. This shows whether Australia's approach is standard or an outlier. This step is NOT optional — it provides critical context.
+Compare with how at least one other country handles the same policy area. Preferred comparison countries: Norway, UK, NZ, Canada, Denmark, Germany. This step is NOT optional.
+
+**Critical**: Do NOT just list tax rates and statistics. Tell the story — what did the other country do, why, and what was the outcome for their citizens? The reader should understand the human difference, not just the numbers. End with one plain-language sentence explaining what this means for Australia.
 
 ### Step 6: Signal Strength Assessment
 Rate the corruption signal:
@@ -153,6 +155,18 @@ These slugs are used throughout the system. Every policy MUST have one.
 4. **No sensationalism.** Never use "corruption" or "scandal" in analysis text. Use "signal strength" and "conflict of interest" — these are factual descriptors.
 5. **Always attribute.** Cite the data source: AEC disclosure year, APH register entry, ATO transparency report year, Hansard date.
 6. **Specific over vague.** "$4.2M from 3 mining companies in 2019-21" beats "significant donations from the mining industry."
+
+## Formatting Rules for Analysis Output
+
+- **Step 1 (What Happened)**: First sentence = the change in plain English (before vs after). Then 1-2 sentences of context MAX. No history lessons.
+- **Step 2 (Who Benefited)**: Dot points. Company name — one-line reason. No paragraphs.
+- **Step 3 (Who Donated)**: Dot points. Name, amount, party, year. One line each. No filler words.
+- **Step 4 (Conflicts)**: Dot points. MP name, party, what they owned/held. One line each.
+- **Step 5 (International)**: 3-4 sentences MAX. What the country did, what the outcome was, one comparison sentence to Australia. Tell the story, keep it short.
+- **Step 6 (Signal)**: One word + one sentence why.
+- **Step 7 (Impact)**: Score + four dot points, one per factor, a few words each.
+- **Sources**: Dot point links at the end.
+- **Overall**: The entire analysis should fit on one screen. If you're writing paragraphs, you're writing too much. Be brutal with editing.
 
 ---
 
