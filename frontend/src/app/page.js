@@ -7,6 +7,8 @@ import { getCategoryMeta } from '@/lib/categoryMeta'
 import { formatDate } from '@/lib/helpers'
 
 export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
+export const revalidate = 0
 
 async function getHomeData() {
   const supabase = createServerClient()

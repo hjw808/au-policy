@@ -2,6 +2,8 @@ import { createServerClient } from '@/lib/supabase'
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
+export const revalidate = 0
 
 export async function GET() {
   const supabase = createServerClient()
@@ -20,5 +22,11 @@ export async function GET() {
     total_members: members.count || 0,
     total_donations: donations.count || 0,
     strong_signals: strongSignals.count || 0,
+  }, {
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+      'CDN-Cache-Control': 'no-store',
+      'Vercel-CDN-Cache-Control': 'no-store',
+    }
   })
 }
