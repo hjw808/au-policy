@@ -1,12 +1,12 @@
 /**
- * Map corruption signal strength to display properties.
+ * Signal strength display config — Wire design (light theme).
  */
 export function signalConfig(strength) {
   const map = {
-    strong:   { color: '#ef4444', bg: 'bg-red-900/30',    border: 'border-red-500',    label: 'Strong Signal',   dot: 'bg-red-500' },
-    moderate: { color: '#f97316', bg: 'bg-orange-900/30', border: 'border-orange-500', label: 'Moderate Signal', dot: 'bg-orange-500' },
-    weak:     { color: '#eab308', bg: 'bg-yellow-900/30', border: 'border-yellow-500', label: 'Weak Signal',     dot: 'bg-yellow-500' },
-    none:     { color: '#6b7280', bg: 'bg-gray-900/30',   border: 'border-gray-600',   label: 'No Signal',       dot: 'bg-gray-500' },
+    strong:   { color: '#dc2626', label: 'Strong',   dotClass: 'bg-red-600' },
+    moderate: { color: '#d97706', label: 'Moderate',  dotClass: 'bg-amber-600' },
+    weak:     { color: '#9ca3af', label: 'Weak',      dotClass: 'bg-gray-400' },
+    none:     { color: '#d4d4d4', label: 'None',      dotClass: 'bg-gray-300' },
   }
   return map[strength] || map.none
 }
@@ -28,6 +28,16 @@ export function formatCurrency(amount) {
 export function formatDate(dateStr) {
   if (!dateStr) return ''
   return new Date(dateStr).toLocaleDateString('en-AU', {
+    year: 'numeric', month: 'short'
+  })
+}
+
+/**
+ * Format date with day included.
+ */
+export function formatDateFull(dateStr) {
+  if (!dateStr) return ''
+  return new Date(dateStr).toLocaleDateString('en-AU', {
     year: 'numeric', month: 'short', day: 'numeric'
   })
 }
@@ -37,10 +47,10 @@ export function formatDate(dateStr) {
  */
 export const categoryLabels = {
   mining: 'Mining & Resources',
-  oil_gas: 'Oil & Gas',
-  tax: 'Tax Policy',
+  oil_gas: 'Energy & Gas',
+  tax: 'Taxation',
   superannuation: 'Superannuation',
-  property: 'Property & Housing',
+  property: 'Housing & Property',
   healthcare: 'Healthcare',
   defence: 'Defence',
   privatisation: 'Privatisation',
@@ -55,4 +65,26 @@ export const categoryLabels = {
  */
 export function getCategoryLabel(cat) {
   return categoryLabels[cat] || cat || 'Unknown'
+}
+
+/**
+ * Category text colors for Wire design (muted, specific per category).
+ */
+export const categoryColors = {
+  mining: 'text-amber-700',
+  oil_gas: 'text-red-700',
+  tax: 'text-blue-700',
+  superannuation: 'text-indigo-700',
+  property: 'text-violet-700',
+  healthcare: 'text-emerald-700',
+  defence: 'text-slate-600',
+  privatisation: 'text-orange-700',
+  resources: 'text-lime-700',
+  trade: 'text-cyan-700',
+  subsidy: 'text-pink-700',
+  general: 'text-gray-500',
+}
+
+export function getCategoryColor(cat) {
+  return categoryColors[cat] || categoryColors.general
 }

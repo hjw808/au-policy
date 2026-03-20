@@ -1,45 +1,52 @@
-import PolicyBranch from './PolicyBranch'
+import Link from 'next/link'
+import SignalBadge from './SignalBadge'
+import { formatDate } from '@/lib/helpers'
 
-export default function TimelineTree({ years, accentColor }) {
+export default function TimelineTree({ years }) {
   if (!years || years.length === 0) {
-    return (
-      <div className="bg-[#111827] rounded-xl p-12 text-center border border-white/5">
-        <p className="text-gray-400">No policies found in this category yet.</p>
-      </div>
-    )
+    return <p className="text-sm text-gray-400">No policies found in this category.</p>
   }
 
   return (
-    <div className="relative pl-8 md:pl-12">
-      {/* Vertical timeline rail */}
-      <div
-        className="absolute left-3 md:left-5 top-0 bottom-0 w-0.5"
-        style={{ background: `linear-gradient(to bottom, ${accentColor || '#3b82f6'}, ${accentColor || '#3b82f6'}44)` }}
-      />
+    <div className="space-y-8">
+      {years.map(({ year, policies }) => (
+        <div key={year} id={`year-${year}`}>
+          <h2 className="font-mono text-sm font-medium text-gray-400 mb-3 pb-2 border-b border-gray-200">
+            {year} <span className="text-gray-300 ml-1">{policies.length}</span>
+          </h2>
+          <div>
+            {policies.map(policy => {
+              const event = policy.timeline_events?.[0]
+              const analysis = event?.analysis_json || {}
+              const signal = analysis.corruption_signal_strength || 'none'
+              const impact = event?.impact_score || policy.flag_score || 0
 
-      {years.map((yearGroup, idx) => (
-        <div key={yearGroup.year} id={`year-${yearGroup.year}`} className="relative mb-10">
-          {/* Year dot */}
-          <div
-            className="absolute -left-5 md:-left-7 top-1 w-4 h-4 rounded-full border-[3px] border-[#0a0e1a] z-10"
-            style={{ backgroundColor: accentColor || '#3b82f6' }}
-          />
-
-          {/* Year label */}
-          <div className="flex items-center gap-3 mb-4">
-            <h3 className="text-xl font-bold" style={{ color: accentColor || '#3b82f6' }}>
-              {yearGroup.year}
-            </h3>
-            <span className="text-xs text-gray-600">
-              {yearGroup.policies.length} {yearGroup.policies.length === 1 ? 'policy' : 'policies'}
-            </span>
-          </div>
-
-          {/* Policy branches */}
-          <div className="space-y-3">
-            {yearGroup.policies.map(policy => (
-              <PolicyBranch key={policy.id} policy={policy} />
-            ))}
+              return (
+                <Link key={policy.id} href={`/policy/${policy.id}`}>
+                  <div className="py-3 border-b border-gray-100 flex items-start gap-4 hover:bg-gray-50/50 transition-colors -mx-2 px-2 rounded">
+                    <span className="font-mono text-xs text-gray-400 pt-0.5 w-16 shrink-0">
+                      {formatDate(policy.date)}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 leading-snug">
+                        {policy.title}
+                      </p>
+                      {event?.primary_beneficiaries?.length > 0 && (
+                        <p className="text-xs text-gray-400 mt-0.5 truncate">
+                          Benefited: {event.primary_beneficiaries.join(', ')}
+                        </p>
+                      )}
+                    </div>
+                    <div className="shrink-0 flex items-center gap-3">
+                      <SignalBadge strength={signal} size="dot" />
+                      <span className="font-mono text-xs text-gray-400">
+                        {impact}/10
+                      </span>
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
           </div>
         </div>
       ))}

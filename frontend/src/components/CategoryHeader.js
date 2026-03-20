@@ -8,45 +8,39 @@ export default function CategoryHeader({ slug, stats }) {
   return (
     <div className="mb-8">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-        <Link href="/" className="hover:text-gray-300">Home</Link>
+      <div className="flex items-center gap-2 text-xs text-gray-400 mb-4">
+        <Link href="/" className="hover:text-gray-600">Home</Link>
         <span>/</span>
-        <span className="text-gray-300">{meta.label}</span>
+        <span className="text-gray-600">{meta.label}</span>
       </div>
 
-      {/* Title */}
-      <div className="flex items-center gap-4 mb-4">
-        <span className="text-4xl">{meta.icon}</span>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-100">{meta.label}</h1>
-          <p className="text-gray-500 mt-1">
-            {stats.totalPolicies} policies tracked across 30 years of parliament
-          </p>
-        </div>
-      </div>
+      <p className={`text-[11px] font-semibold uppercase tracking-[1.5px] ${meta.colorClass} mb-2`}>
+        Category
+      </p>
+      <h1 className="font-serif text-3xl font-bold text-gray-900 mb-4">{meta.label}</h1>
 
       {/* Stats strip */}
-      <div className="flex flex-wrap gap-6 mt-4">
+      <div className="flex flex-wrap gap-8 py-4 border-t border-b border-gray-200 text-sm">
         <div>
-          <span className="text-2xl font-bold text-gray-100">{stats.totalPolicies}</span>
-          <span className="text-sm text-gray-500 ml-2">policies</span>
+          <span className="font-mono font-medium text-gray-900">{stats.totalPolicies}</span>
+          <span className="text-gray-400 ml-1.5">policies</span>
         </div>
-        {stats.totalDonations > 0 && (
-          <div>
-            <span className="text-2xl font-bold text-green-400">{formatCurrency(stats.totalDonations)}</span>
-            <span className="text-sm text-gray-500 ml-2">in linked donations</span>
-          </div>
-        )}
         {stats.strongSignals > 0 && (
           <div>
-            <span className="text-2xl font-bold text-red-400">{stats.strongSignals}</span>
-            <span className="text-sm text-gray-500 ml-2">strong signals</span>
+            <span className="font-mono font-medium text-red-600">{stats.strongSignals}</span>
+            <span className="text-gray-400 ml-1.5">strong signals</span>
+          </div>
+        )}
+        {stats.totalDonations > 0 && (
+          <div>
+            <span className="font-mono font-medium text-gray-900">{formatCurrency(stats.totalDonations)}</span>
+            <span className="text-gray-400 ml-1.5">in linked donations</span>
           </div>
         )}
         {stats.maxImpact > 0 && (
           <div>
-            <span className="text-2xl font-bold text-orange-400">{stats.maxImpact}</span>
-            <span className="text-sm text-gray-500 ml-2">highest impact</span>
+            <span className="font-mono font-medium text-gray-900">{stats.maxImpact}/10</span>
+            <span className="text-gray-400 ml-1.5">max impact</span>
           </div>
         )}
       </div>

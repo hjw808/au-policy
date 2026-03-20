@@ -11,7 +11,6 @@ export const dynamic = 'force-dynamic'
 async function getCategoryData(slug) {
   const supabase = createServerClient()
 
-  // Get all policies in this category
   const { data: policies } = await supabase
     .from('policies')
     .select(`
@@ -40,7 +39,7 @@ async function getCategoryData(slug) {
     .map(([year, policies]) => ({ year: parseInt(year), policies }))
     .sort((a, b) => b.year - a.year)
 
-  // Get donation totals for this category's industries
+  // Get donation totals
   const industryMap = {
     mining: ['mining'], oil_gas: ['oil_gas', 'energy'], tax: ['financial'],
     property: ['property'], healthcare: ['healthcare'], defence: ['defence'],
@@ -83,7 +82,6 @@ async function getCategoryData(slug) {
 
 export default async function CategoryPage({ params }) {
   const { slug } = params
-  const meta = getCategoryMeta(slug)
   const data = await getCategoryData(slug)
 
   if (!data) return notFound()
@@ -95,26 +93,26 @@ export default async function CategoryPage({ params }) {
       <div className="flex gap-8">
         {/* Main timeline */}
         <div className="flex-1 min-w-0">
-          <TimelineTree years={data.years} accentColor={meta.color} />
+          <TimelineTree years={data.years} />
         </div>
 
         {/* Sidebar — year nav + top donations */}
-        <aside className="hidden lg:block w-56 shrink-0">
-          <div className="sticky top-24 space-y-8">
-            <YearNav years={data.years} accentColor={meta.color} />
+        <aside className="hidden lg:block w-48 shrink-0">
+          <div className="sticky top-20 space-y-8">
+            <YearNav years={data.years} />
 
             {data.topDonations.length > 0 && (
               <div>
-                <p className="text-xs text-gray-600 font-semibold mb-2 uppercase tracking-wider">
+                <p className="text-[11px] font-semibold uppercase tracking-[1.5px] text-gray-400 mb-3">
                   Top Donors
                 </p>
                 <div className="space-y-2">
                   {data.topDonations.slice(0, 5).map((d, i) => (
                     <div key={i} className="text-xs">
-                      <span className="text-gray-300">{d.donor_name}</span>
+                      <span className="text-gray-700">{d.donor_name}</span>
                       <br />
-                      <span className="text-green-400">{formatCurrency(d.amount_aud)}</span>
-                      <span className="text-gray-600"> \u2192 {d.recipient_party}</span>
+                      <span className="font-mono text-gray-500">{formatCurrency(d.amount_aud)}</span>
+                      <span className="text-gray-400"> {'\u2192'} {d.recipient_party}</span>
                     </div>
                   ))}
                 </div>

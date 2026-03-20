@@ -1,10 +1,8 @@
 import { createServerClient } from '@/lib/supabase'
-import CategoryGrid from '@/components/CategoryGrid'
-import StatsBar from '@/components/StatsBar'
-import SignalBadge from '@/components/SignalBadge'
 import Link from 'next/link'
 import { getCategoryMeta } from '@/lib/categoryMeta'
-import { formatDate } from '@/lib/helpers'
+import { formatDate, getCategoryColor } from '@/lib/helpers'
+import SignalBadge from '@/components/SignalBadge'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
@@ -37,20 +35,8 @@ async function getHomeData() {
   const cats = {}
   for (const p of policies) {
     const cat = p.category || 'general'
-    if (!cats[cat]) cats[cat] = { slug: cat, policyCount: 0, donationTotal: 0, strongestSignal: 'none', maxImpact: 0 }
+    if (!cats[cat]) cats[cat] = { slug: cat, policyCount: 0 }
     cats[cat].policyCount++
-  }
-  for (const e of events) {
-    const cat = e.category || 'general'
-    if (!cats[cat]) cats[cat] = { slug: cat, policyCount: 0, donationTotal: 0, strongestSignal: 'none', maxImpact: 0 }
-    const signal = e.analysis_json?.corruption_signal_strength || 'none'
-    const rank = { strong: 3, moderate: 2, weak: 1, none: 0 }
-    if ((rank[signal] || 0) > (rank[cats[cat].strongestSignal] || 0)) {
-      cats[cat].strongestSignal = signal
-    }
-    if ((e.impact_score || 0) > cats[cat].maxImpact) {
-      cats[cat].maxImpact = e.impact_score || 0
-    }
   }
 
   const categories = Object.values(cats)
@@ -60,7 +46,7 @@ async function getHomeData() {
   // Top impact highlights
   const highlights = events
     .filter(e => e.impact_score >= 6)
-    .slice(0, 5)
+    .slice(0, 10)
 
   return {
     categories,
@@ -79,88 +65,93 @@ export default async function HomePage() {
 
   return (
     <div>
-      {/* Hero */}
-      <section className="text-center py-12 mb-8">
-        <h1 className="text-4xl md:text-5xl font-bold mb-4">
-          <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
-            Follow the Money
-          </span>
+      {/* Hero — pure typography */}
+      <div className="mb-10">
+        <h1 className="font-serif text-4xl md:text-[42px] font-bold leading-[1.1] tracking-tight text-gray-900 mb-3">
+          Who benefits from<br />Australian policy?
         </h1>
-        <p className="text-lg text-gray-400 max-w-2xl mx-auto mb-2">
-          30 years of Australian parliamentary decisions. Who benefited, who donated, and who had conflicts of interest.
+        <p className="text-base text-gray-500 max-w-xl leading-relaxed">
+          {stats.total_complete} parliamentary decisions cross-referenced with political
+          donations, declared interests, and corporate tax data. All from public government records.
         </p>
-        <p className="text-sm text-gray-600">
-          Pick a category below to explore its policy timeline.
-        </p>
-      </section>
+      </div>
 
-      {/* Stats */}
-      <section className="mb-10">
-        <StatsBar stats={stats} />
-      </section>
-
-      {/* Category Grid */}
-      <section className="mb-12">
-        <h2 className="text-xl font-bold text-gray-200 mb-5">Explore by Category</h2>
-        <CategoryGrid categories={categories} />
-      </section>
-
-      {/* Highlights */}
-      {highlights.length > 0 && (
-        <section className="mb-12">
-          <h2 className="text-xl font-bold text-gray-200 mb-5">Highest Impact Decisions</h2>
-          <div className="space-y-3">
-            {highlights.map((event, i) => {
-              const signal = event.analysis_json?.corruption_signal_strength || 'none'
-              const meta = getCategoryMeta(event.category)
-              return (
-                <Link key={event.policy_id || i} href={`/policy/${event.policy_id}`}>
-                  <div className="bg-[#111827] border border-white/5 rounded-xl p-4 hover:border-blue-500/30 transition-all flex items-center gap-4 mb-3">
-                    <span className="text-2xl">{meta.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                        <span className="text-xs text-gray-500">{formatDate(event.date)}</span>
-                        <span className="text-xs px-2 py-0.5 rounded bg-white/5 text-gray-400">
-                          {meta.label}
-                        </span>
-                        <SignalBadge strength={signal} size="sm" />
-                      </div>
-                      <p className="text-sm font-medium text-gray-200 truncate">{event.title}</p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span className="text-xl font-bold" style={{
-                        color: event.impact_score >= 7 ? '#ef4444' : '#f97316'
-                      }}>
-                        {event.impact_score}
-                      </span>
-                      <p className="text-xs text-gray-600">impact</p>
-                    </div>
-                  </div>
-                </Link>
-              )
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* CTA */}
-      <section className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 rounded-2xl p-8 text-center border border-white/5">
-        <h2 className="text-xl font-bold text-gray-200 mb-2">Want to dig deeper?</h2>
-        <p className="text-gray-400 mb-6">
-          Search for specific policies, explore MP profiles, or follow the money trail.
-        </p>
-        <div className="flex justify-center gap-4 flex-wrap">
-          <Link href="/search" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-medium transition-colors">
-            Search Policies
-          </Link>
-          <Link href="/money" className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-sm font-medium transition-colors border border-white/10">
-            Follow the Money
-          </Link>
-          <Link href="/mp" className="px-5 py-2.5 bg-white/5 hover:bg-white/10 text-gray-300 rounded-lg text-sm font-medium transition-colors border border-white/10">
-            Browse MPs
-          </Link>
+      {/* Numbers — inline row, not boxed cards */}
+      <div className="flex flex-wrap gap-10 py-5 border-t border-b border-gray-200 mb-10">
+        <div>
+          <p className="font-mono text-2xl font-medium text-gray-900">{Number(stats.total_complete).toLocaleString()}</p>
+          <p className="text-xs text-gray-400 mt-0.5">Policies</p>
         </div>
-      </section>
+        <div>
+          <p className="font-mono text-2xl font-medium text-gray-900">{Number(stats.total_members).toLocaleString()}</p>
+          <p className="text-xs text-gray-400 mt-0.5">MPs tracked</p>
+        </div>
+        <div>
+          <p className="font-mono text-2xl font-medium text-gray-900">{Number(stats.total_donations).toLocaleString()}</p>
+          <p className="text-xs text-gray-400 mt-0.5">Donation records</p>
+        </div>
+        <div>
+          <p className="font-mono text-2xl font-medium text-gray-900">{Number(stats.strong_signals).toLocaleString()}</p>
+          <p className="text-xs text-gray-400 mt-0.5">Strong signals</p>
+        </div>
+      </div>
+
+      {/* Browse by category — text links, not cards */}
+      <div className="mb-10">
+        <p className="text-[11px] font-semibold uppercase tracking-[1.5px] text-gray-400 mb-4">Browse by category</p>
+        <div className="flex flex-wrap gap-x-6 gap-y-2">
+          {categories.map(cat => {
+            const meta = getCategoryMeta(cat.slug)
+            return (
+              <Link
+                key={cat.slug}
+                href={`/category/${cat.slug}`}
+                className="text-sm text-gray-600 hover:text-gray-900 transition-colors border-b border-transparent hover:border-gray-900"
+              >
+                {meta.label} <span className="font-mono text-xs text-gray-400">{cat.policyCount}</span>
+              </Link>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Content stream — highest impact decisions */}
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-[1.5px] text-gray-400 mb-4">Highest impact decisions</p>
+        <div>
+          {highlights.map((event, i) => {
+            const signal = event.analysis_json?.corruption_signal_strength || 'none'
+            const meta = getCategoryMeta(event.category)
+            const catColor = getCategoryColor(event.category)
+
+            return (
+              <Link key={event.policy_id || i} href={`/policy/${event.policy_id}`}>
+                <div className="py-4 border-b border-gray-100 grid grid-cols-[70px_1fr_auto] gap-4 items-start hover:bg-gray-50/50 transition-colors -mx-2 px-2 rounded">
+                  {/* Date */}
+                  <span className="font-mono text-xs text-gray-400 pt-0.5">
+                    {formatDate(event.date)}
+                  </span>
+
+                  {/* Body */}
+                  <div>
+                    <p className={`text-[10px] font-semibold uppercase tracking-[0.5px] mb-1 ${catColor}`}>
+                      {meta.label}
+                    </p>
+                    <p className="text-[15px] font-semibold text-gray-900 leading-snug">
+                      {event.title}
+                    </p>
+                  </div>
+
+                  {/* Signal dot */}
+                  <div className="text-right pt-1">
+                    <SignalBadge strength={signal} />
+                  </div>
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }

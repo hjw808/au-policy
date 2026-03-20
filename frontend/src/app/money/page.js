@@ -3,31 +3,31 @@ import { useState, useEffect } from 'react'
 import { formatCurrency } from '@/lib/helpers'
 
 const PARTY_COLORS = {
-  Liberal: '#3b82f6',
-  Labor: '#ef4444',
-  Nationals: '#eab308',
-  Greens: '#22c55e',
-  'One Nation': '#f97316',
-  'United Australia': '#a855f7',
+  Labor: '#dc2626',
+  Liberal: '#2563eb',
+  Nationals: '#ca8a04',
+  Greens: '#16a34a',
+  'One Nation': '#ea580c',
+  'United Australia': '#7c3aed',
   Other: '#6b7280',
 }
 
-function SankeyBar({ industry, party, total, maxTotal }) {
-  const width = Math.max((total / maxTotal) * 100, 2)
+function FlowBar({ label, party, total, maxTotal }) {
+  const width = Math.max((total / maxTotal) * 100, 3)
   const color = PARTY_COLORS[party] || PARTY_COLORS.Other
 
   return (
-    <div className="flex items-center gap-3 py-1.5">
-      <span className="text-xs text-gray-400 w-24 truncate text-right">{industry}</span>
-      <div className="flex-1 relative">
+    <div className="flex items-center gap-3 py-1">
+      <span className="text-xs text-gray-500 w-24 text-right truncate shrink-0">{label}</span>
+      <div className="flex-1">
         <div
-          className="h-6 rounded-sm flex items-center px-2 transition-all"
-          style={{ width: `${width}%`, backgroundColor: color, minWidth: '40px', opacity: 0.8 }}
+          className="h-5 rounded-sm flex items-center px-2"
+          style={{ width: `${width}%`, backgroundColor: color, minWidth: '40px', opacity: 0.75 }}
         >
-          <span className="text-xs text-white font-medium truncate">{formatCurrency(total)}</span>
+          <span className="text-[10px] text-white font-medium truncate">{formatCurrency(total)}</span>
         </div>
       </div>
-      <span className="text-xs text-gray-500 w-20 truncate">{party}</span>
+      <span className="text-xs text-gray-400 w-20 truncate shrink-0">{party}</span>
     </div>
   )
 }
@@ -56,13 +56,13 @@ export default function MoneyPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-100 mb-2">Follow the Money</h1>
-      <p className="text-gray-500 mb-8">
-        Political donations mapped by industry and party. See which industries fund which parties.
+      <h1 className="font-serif text-3xl font-bold text-gray-900 mb-1">Follow the Money</h1>
+      <p className="text-sm text-gray-400 mb-6">
+        Political donations mapped by industry and party from the AEC Transparency Register.
       </p>
 
       {/* View tabs */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-1 mb-6">
         {[
           { id: 'industry', label: 'By Industry' },
           { id: 'year', label: 'By Year' },
@@ -71,10 +71,10 @@ export default function MoneyPage() {
           <button
             key={tab.id}
             onClick={() => setView(tab.id)}
-            className={`text-sm px-4 py-2 rounded-lg transition-colors ${
+            className={`text-xs px-3 py-1.5 rounded transition-colors ${
               view === tab.id
-                ? 'bg-blue-900/50 text-blue-300 border border-blue-700'
-                : 'bg-white/5 text-gray-500 border border-white/10 hover:text-gray-300'
+                ? 'bg-gray-900 text-white'
+                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
             }`}
           >
             {tab.label}
@@ -83,61 +83,56 @@ export default function MoneyPage() {
       </div>
 
       {/* Legend */}
-      <div className="flex flex-wrap gap-4 mb-6">
+      <div className="flex flex-wrap gap-4 mb-5">
         {Object.entries(PARTY_COLORS).filter(([p]) => p !== 'Other').map(([party, color]) => (
           <div key={party} className="flex items-center gap-1.5">
-            <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: color }} />
-            <span className="text-xs text-gray-500">{party}</span>
+            <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: color }} />
+            <span className="text-[10px] text-gray-400">{party}</span>
           </div>
         ))}
       </div>
 
       {/* Content */}
-      <div className="bg-[#111827] rounded-xl p-6 border border-white/5">
+      <div>
         {loading ? (
-          <div className="text-center py-12 text-gray-500">Loading donation data...</div>
+          <p className="text-sm text-gray-400 py-12 text-center">Loading donation data...</p>
         ) : flows.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-gray-400">No donation data available yet.</p>
-            <p className="text-sm text-gray-600 mt-2">Run the AEC donation ingestion first.</p>
-          </div>
+          <p className="text-sm text-gray-400 py-12 text-center">
+            No donation data available yet. Run the AEC donation ingestion first.
+          </p>
         ) : view === 'top' ? (
-          // Top donors table
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-gray-500 text-left">
-                  <th className="pb-3 pr-4">Donor</th>
-                  <th className="pb-3 pr-4">Industry</th>
-                  <th className="pb-3 pr-4">Party</th>
-                  <th className="pb-3 pr-4">Amount</th>
-                  <th className="pb-3">Year</th>
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-xs text-gray-400 text-left border-b border-gray-200">
+                <th className="pb-2 pr-4 font-medium">Donor</th>
+                <th className="pb-2 pr-4 font-medium">Industry</th>
+                <th className="pb-2 pr-4 font-medium">Party</th>
+                <th className="pb-2 pr-4 font-medium">Amount</th>
+                <th className="pb-2 font-medium">Year</th>
+              </tr>
+            </thead>
+            <tbody>
+              {flows.slice(0, 50).map((d, i) => (
+                <tr key={i} className="border-b border-gray-100">
+                  <td className="py-2 pr-4 text-gray-700">{d.donor_name}</td>
+                  <td className="py-2 pr-4 text-gray-500">{d.donor_industry}</td>
+                  <td className="py-2 pr-4">
+                    <span style={{ color: PARTY_COLORS[d.recipient_party] || '#888' }}>
+                      {d.recipient_party}
+                    </span>
+                  </td>
+                  <td className="py-2 pr-4 font-mono text-gray-700">{formatCurrency(d.amount_aud)}</td>
+                  <td className="py-2 text-gray-400">{d.financial_year}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {flows.slice(0, 50).map((d, i) => (
-                  <tr key={i} className="border-t border-white/5">
-                    <td className="py-2.5 pr-4 text-gray-200">{d.donor_name}</td>
-                    <td className="py-2.5 pr-4 text-gray-400">{d.donor_industry}</td>
-                    <td className="py-2.5 pr-4">
-                      <span style={{ color: PARTY_COLORS[d.recipient_party] || '#888' }}>
-                        {d.recipient_party}
-                      </span>
-                    </td>
-                    <td className="py-2.5 pr-4 text-green-300 font-medium">{formatCurrency(d.amount_aud)}</td>
-                    <td className="py-2.5 text-gray-500">{d.financial_year}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         ) : (
-          // Bar chart view (industry or year)
           <div className="space-y-0.5">
             {flows.slice(0, 50).map((f, i) => (
-              <SankeyBar
+              <FlowBar
                 key={i}
-                industry={f.industry || f.year || 'Unknown'}
+                label={f.industry || f.year || 'Unknown'}
                 party={f.party || f.recipient_party || ''}
                 total={f.total || 0}
                 maxTotal={maxTotal}
@@ -147,10 +142,9 @@ export default function MoneyPage() {
         )}
       </div>
 
-      {/* Methodology note */}
-      <p className="text-xs text-gray-600 mt-4">
-        Data sourced from the AEC Transparency Register. Donation amounts are as disclosed.
-        Industry classification is automated and may not be 100% accurate.
+      {/* Source note */}
+      <p className="text-[10px] text-gray-300 mt-6">
+        Source: AEC Transparency Register. Industry classification is automated and may not be 100% accurate.
       </p>
     </div>
   )

@@ -2,18 +2,21 @@ import './globals.css'
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'Australian Policy Accountability',
-  description: 'Tracking 20 years of Australian parliamentary decisions — who benefited, who donated, and who had conflicts of interest.',
+  title: 'PolicyWatch — Australian Parliamentary Decisions',
+  description: 'Cross-referencing 30 years of Australian policy decisions with political donations, declared interests, and corporate tax data.',
   openGraph: {
-    title: 'Australian Policy Accountability',
-    description: 'Follow the money behind Australian policy decisions.',
+    title: 'PolicyWatch',
+    description: 'Who benefits from Australian policy? 247 decisions cross-referenced with public government data.',
     type: 'website',
   },
 }
 
 function NavLink({ href, children }) {
   return (
-    <Link href={href} className="text-sm text-gray-400 hover:text-blue-400 transition-colors px-3 py-2 rounded-lg hover:bg-white/5">
+    <Link
+      href={href}
+      className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
+    >
       {children}
     </Link>
   )
@@ -23,24 +26,21 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className="min-h-screen font-sans antialiased">
-        {/* Navigation */}
-        <nav className="sticky top-0 z-50 backdrop-blur-md bg-[#0a0e1a]/80 border-b border-white/5">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <Link href="/" className="flex items-center gap-3">
-                <span className="text-xl">&#127462;&#127482;</span>
-                <span className="font-bold text-lg bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                  Policy Accountability
-                </span>
+        {/* Navigation — minimal, no backdrop blur, no gradients */}
+        <nav className="border-b border-gray-200">
+          <div className="max-w-[960px] mx-auto px-6">
+            <div className="flex items-center justify-between h-14">
+              <Link href="/" className="font-serif text-lg font-bold text-gray-900 hover:text-gray-700">
+                PolicyWatch
               </Link>
-              <div className="hidden md:flex items-center gap-1">
+              <div className="hidden md:flex items-center gap-6">
                 <NavLink href="/">Timeline</NavLink>
-                <NavLink href="/money">Follow the Money</NavLink>
                 <NavLink href="/mp">MPs</NavLink>
+                <NavLink href="/money">Money</NavLink>
                 <NavLink href="/search">Search</NavLink>
                 <NavLink href="/about">About</NavLink>
               </div>
-              {/* Mobile menu button */}
+              {/* Mobile: just show search */}
               <div className="md:hidden">
                 <NavLink href="/search">Search</NavLink>
               </div>
@@ -49,21 +49,20 @@ export default function RootLayout({ children }) {
         </nav>
 
         {/* Main content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-[960px] mx-auto px-6 py-10">
           {children}
         </main>
 
-        {/* Footer */}
-        <footer className="border-t border-white/5 mt-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-              <p className="text-sm text-gray-500">
-                Built with public data. Not affiliated with any political party.
-              </p>
-              <div className="flex gap-4 text-sm text-gray-500">
-                <Link href="/about" className="hover:text-gray-300">Methodology</Link>
-                <a href="https://github.com/hjw808/au-policy" target="_blank" rel="noopener" className="hover:text-gray-300">Source Code</a>
-              </div>
+        {/* Footer — simple, factual */}
+        <footer className="border-t border-gray-200 mt-16">
+          <div className="max-w-[960px] mx-auto px-6 py-8">
+            <p className="text-xs text-gray-400 leading-relaxed">
+              All data from public Australian government records: AEC Transparency Register, APH Hansard, ATO Corporate Tax Transparency, APH Register of Members' Interests. Non-partisan, non-commercial, open source.
+            </p>
+            <div className="flex gap-6 mt-3 text-xs text-gray-400">
+              <Link href="/about" className="hover:text-gray-600">Methodology</Link>
+              <Link href="/about#corrections" className="hover:text-gray-600">Corrections</Link>
+              <a href="https://github.com/hjw808/au-policy" target="_blank" rel="noopener" className="hover:text-gray-600">Source Code</a>
             </div>
           </div>
         </footer>

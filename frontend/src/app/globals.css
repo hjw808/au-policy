@@ -2,27 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --navy-900: #0a0e1a;
-  --navy-800: #111827;
-  --navy-700: #1a1f35;
-}
-
 body {
-  background: var(--navy-900);
-  color: #e0e4ef;
+  background: #fff;
+  color: #111;
+  -webkit-font-smoothing: antialiased;
 }
-
-/* Scrollbar styling */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: var(--navy-900); }
-::-webkit-scrollbar-thumb { background: #2a3050; border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: #3a4060; }
 
 /* Smooth scroll */
 html { scroll-behavior: smooth; }
 
-/* Link styling */
+/* Clean link transitions */
 a { transition: color 0.15s ease; }
 
 /* Line clamp utility */
@@ -32,3 +21,12 @@ a { transition: color 0.15s ease; }
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Monospace numbers in data contexts */
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* Minimal scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #bbb; }
