@@ -30,6 +30,7 @@ export default async function PolicyPage({ params }) {
   const analysis = event?.analysis_json || {}
   const signal = analysis.corruption_signal_strength || 'none'
   const catColor = getCategoryColor(policy.category)
+  const flagExplanations = analysis.flag_explanations || []
 
   return (
     <div className="max-w-[720px] mx-auto">
@@ -70,6 +71,16 @@ export default async function PolicyPage({ params }) {
 
       {event ? (
         <div className="space-y-8">
+          {/* What Changed — the plain English explainer */}
+          {event.what_changed && (
+            <div className="space-y-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">What changed</h3>
+              {event.what_changed.split('\n\n').map((paragraph, i) => (
+                <p key={i} className="text-sm text-gray-700 leading-relaxed">{paragraph}</p>
+              ))}
+            </div>
+          )}
+
           {/* Who benefited / Who lost */}
           <div className="grid md:grid-cols-2 gap-6">
             <div>
@@ -98,7 +109,9 @@ export default async function PolicyPage({ params }) {
           {event.revenue_impact && (
             <div className="border-l-2 border-gray-200 pl-4">
               <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Revenue Impact</h3>
-              <p className="text-sm text-gray-700 leading-relaxed">{event.revenue_impact}</p>
+              {event.revenue_impact.split('\n\n').map((paragraph, i) => (
+                <p key={i} className="text-sm text-gray-700 leading-relaxed mb-2 last:mb-0">{paragraph}</p>
+              ))}
             </div>
           )}
 
@@ -110,7 +123,9 @@ export default async function PolicyPage({ params }) {
               'border-gray-200'
             }`}>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Analysis</h3>
-              <p className="text-sm text-gray-700 leading-relaxed">{analysis.corruption_signal_reasoning}</p>
+              {analysis.corruption_signal_reasoning.split('\n\n').map((paragraph, i) => (
+                <p key={i} className="text-sm text-gray-700 leading-relaxed mb-2 last:mb-0">{paragraph}</p>
+              ))}
             </div>
           )}
 
@@ -140,7 +155,7 @@ export default async function PolicyPage({ params }) {
                     <th className="pb-2 pr-4 font-medium">Donor</th>
                     <th className="pb-2 pr-4 font-medium">Industry</th>
                     <th className="pb-2 pr-4 font-medium">Amount</th>
-                    <th className="pb-2 font-medium">Years Before</th>
+                    <th className="pb-2 font-medium">Timing</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -149,11 +164,15 @@ export default async function PolicyPage({ params }) {
                       <td className="py-2 pr-4 text-gray-700">{d.donor}</td>
                       <td className="py-2 pr-4 text-gray-500">{d.industry}</td>
                       <td className="py-2 pr-4 font-mono text-gray-700">{d.amount}</td>
-                      <td className="py-2 text-gray-400">{d.years_before_policy}y</td>
+                      <td className="py-2 text-gray-400">{d.timing || `${d.years_before_policy}y before`}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              {/* Donations context note */}
+              {event.donations_context && (
+                <p className="text-xs text-gray-500 mt-3 leading-relaxed">{event.donations_context}</p>
+              )}
             </div>
           )}
 
@@ -163,23 +182,43 @@ export default async function PolicyPage({ params }) {
               <h3 className="text-xs font-semibold uppercase tracking-wide text-blue-600 mb-3">
                 How {event.comparison_country} handled this differently
               </h3>
-              <p className="text-sm text-gray-700 mb-2"><strong className="text-gray-900">Approach:</strong> {event.comparison_approach}</p>
-              <p className="text-sm text-gray-700"><strong className="text-gray-900">Outcome:</strong> {event.comparison_outcome}</p>
+              {event.comparison_approach && event.comparison_approach.split('\n\n').map((p, i) => (
+                <p key={`a-${i}`} className="text-sm text-gray-700 mb-2">{p}</p>
+              ))}
+              {event.comparison_outcome && event.comparison_outcome.split('\n\n').map((p, i) => (
+                <p key={`o-${i}`} className="text-sm text-gray-700 mb-2 last:mb-0">{p}</p>
+              ))}
             </div>
           )}
 
           {/* Confidence */}
           {analysis.confidence_notes && (
             <div className="border-l-2 border-gray-200 pl-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Confidence Notes</h3>
-              <p className="text-xs text-gray-500 italic leading-relaxed">{analysis.confidence_notes}</p>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">How confident are we?</h3>
+              {analysis.confidence_notes.split('\n\n').map((paragraph, i) => (
+                <p key={i} className="text-xs text-gray-500 leading-relaxed mb-2 last:mb-0">{paragraph}</p>
+              ))}
             </div>
           )}
 
-          {/* Flag Reasons */}
-          {policy.flag_reasons && policy.flag_reasons.length > 0 && (
+          {/* Flag Reasons — new plain English format */}
+          {flagExplanations.length > 0 ? (
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Why This Was Flagged</h3>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Why this was flagged</h3>
+              <p className="text-xs text-gray-500 mb-3">This policy was automatically flagged by our detection system:</p>
+              <div className="space-y-3">
+                {flagExplanations.map((f, i) => (
+                  <div key={i} className="border-l-2 border-gray-200 pl-3">
+                    <p className="text-sm font-medium text-gray-700">{f.label}</p>
+                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">{f.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : policy.flag_reasons && policy.flag_reasons.length > 0 ? (
+            /* Fallback for old-format flag reasons */
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Why this was flagged</h3>
               <div className="space-y-2">
                 {policy.flag_reasons.map((r, i) => (
                   <div key={i} className="text-sm">
@@ -190,7 +229,7 @@ export default async function PolicyPage({ params }) {
                 ))}
               </div>
             </div>
-          )}
+          ) : null}
         </div>
       ) : (
         <div className="border border-gray-200 rounded p-8 text-center">

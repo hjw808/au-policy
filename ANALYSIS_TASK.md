@@ -10,6 +10,27 @@ capability and write structured findings back to the database.
 This runs on the developer's Claude Code subscription — no external API calls,
 no additional cost. You are the AI.
 
+## CRITICAL: Writing Standard
+
+**Before writing ANY analysis, read `skills/policy-analysis/SKILL.md` first.**
+
+Every field you write must be understandable to an ordinary Australian who has
+never heard of this policy. The reader does not know what acronyms stand for,
+does not know what "foregone revenue" means, and does not know how political
+donations work. Every section must explain what happened before presenting
+numbers or technical details.
+
+Key requirements:
+- `what_changed` field: 2-4 paragraphs explaining before vs after in plain English
+- `revenue_impact`: must include tangible comparisons (nurses, houses, schools)
+- `primary_beneficiaries`: each entry must include a brief description
+- `disadvantaged_groups`: each entry must explain WHY they're disadvantaged
+- `comparison_approach`: must open with the shared question both countries face
+- `confidence_notes`: must explain what each source IS (not just name it)
+- `flag_explanations`: must be plain English with "doesn't prove corruption" caveat
+- All acronyms defined on first use
+- Active voice, name names, tell the story chronologically
+
 ---
 
 ## Environment Setup
@@ -207,17 +228,19 @@ const { error } = await supabase
     category: policy.category,
     impact_score: analysis.impact_score,
     confidence_score: 0.85,  // adjust down if confidence_notes mentions major gaps
+    what_changed: analysis.what_changed,  // NEW: plain English explainer
     primary_beneficiaries: analysis.primary_beneficiaries,
     disadvantaged_groups: analysis.disadvantaged_groups,
     revenue_impact: analysis.revenue_impact,
     corporate_advantage: analysis.corporate_advantage,
     conflict_of_interest_flags: analysis.conflict_of_interest_flags,
     linked_donations: analysis.linked_donations,
+    donations_context: analysis.donations_context,  // NEW: plain English note for donations table
     alternative_policy: analysis.alternative_policy,
     comparison_country: analysis.comparison_country,
     comparison_approach: analysis.comparison_approach,
     comparison_outcome: analysis.comparison_outcome,
-    analysis_json: analysis,
+    analysis_json: analysis,  // includes flag_explanations, confidence_notes, corruption_signal_*
     generated_at: new Date().toISOString()
   })
 

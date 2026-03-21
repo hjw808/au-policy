@@ -86,17 +86,19 @@ create table if not exists timeline_events (
   category text,
   impact_score numeric,
   confidence_score numeric,
+  what_changed text,                -- Plain English "before vs after" explainer
   primary_beneficiaries jsonb,
   disadvantaged_groups jsonb,
   revenue_impact text,
   corporate_advantage boolean,
   conflict_of_interest_flags jsonb,
   linked_donations jsonb,
+  donations_context text,           -- Plain English note explaining the donations table
   alternative_policy text,
   comparison_country text,
   comparison_approach text,
   comparison_outcome text,
-  analysis_json jsonb,
+  analysis_json jsonb,              -- includes flag_explanations[], confidence_notes
   generated_at timestamptz default now()
 );
 
