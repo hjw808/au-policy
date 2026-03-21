@@ -2,11 +2,11 @@ import './globals.css'
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'PolicyWatch — Australian Parliamentary Decisions',
-  description: 'Cross-referencing 30 years of Australian policy decisions with political donations, declared interests, and corporate tax data.',
+  title: 'PolicyWatch — How Australian policy affects you',
+  description: 'Every major Australian policy decision scored by how it affects workers, renters, parents and taxpayers. Cross-referenced with political donations and declared interests.',
   openGraph: {
     title: 'PolicyWatch',
-    description: 'Who benefits from Australian policy? 247 decisions cross-referenced with public government data.',
+    description: 'How does Australian policy affect you? 500 decisions checked against political donations and scored for everyday Australians.',
     type: 'website',
   },
 }

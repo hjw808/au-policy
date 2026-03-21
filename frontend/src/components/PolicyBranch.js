@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import SignalBadge from './SignalBadge'
+import ReaderVerdict from './ReaderVerdict'
 import { formatDate } from '@/lib/helpers'
 
 export default function PolicyBranch({ policy }) {
@@ -16,11 +17,9 @@ export default function PolicyBranch({ policy }) {
         </span>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-gray-900 leading-snug">{policy.title}</p>
-          {event?.primary_beneficiaries?.length > 0 && (
-            <p className="text-xs text-gray-400 mt-0.5 truncate">
-              Benefited: {event.primary_beneficiaries.join(', ')}
-            </p>
-          )}
+          <div className="mt-1">
+            <ReaderVerdict event={event} size="compact" />
+          </div>
         </div>
         <div className="shrink-0 flex items-center gap-3">
           <SignalBadge strength={signal} size="dot" />

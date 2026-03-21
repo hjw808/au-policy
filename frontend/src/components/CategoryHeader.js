@@ -19,16 +19,16 @@ export default function CategoryHeader({ slug, stats }) {
       </p>
       <h1 className="font-serif text-3xl font-bold text-gray-900 mb-4">{meta.label}</h1>
 
-      {/* Stats strip */}
+      {/* Stats strip — reader-framed */}
       <div className="flex flex-wrap gap-8 py-4 border-t border-b border-gray-200 text-sm">
         <div>
           <span className="font-mono font-medium text-gray-900">{stats.totalPolicies}</span>
-          <span className="text-gray-400 ml-1.5">policies</span>
+          <span className="text-gray-400 ml-1.5">decisions tracked</span>
         </div>
         {stats.strongSignals > 0 && (
           <div>
             <span className="font-mono font-medium text-red-600">{stats.strongSignals}</span>
-            <span className="text-gray-400 ml-1.5">strong signals</span>
+            <span className="text-gray-400 ml-1.5">worth watching</span>
           </div>
         )}
         {stats.totalDonations > 0 && (
@@ -40,7 +40,7 @@ export default function CategoryHeader({ slug, stats }) {
         {stats.maxImpact > 0 && (
           <div>
             <span className="font-mono font-medium text-gray-900">{stats.maxImpact}/10</span>
-            <span className="text-gray-400 ml-1.5">max impact</span>
+            <span className="text-gray-400 ml-1.5">highest impact</span>
           </div>
         )}
       </div>

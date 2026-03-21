@@ -20,7 +20,7 @@ async function getCategoryData(slug) {
       id, external_id, date, title, category, status, flag_score, flag_reasons, matched_keywords,
       timeline_events (
         id, impact_score, confidence_score, primary_beneficiaries, disadvantaged_groups,
-        revenue_impact, corporate_advantage, conflict_of_interest_flags, linked_donations,
+        what_changed, revenue_impact, corporate_advantage, conflict_of_interest_flags, linked_donations,
         comparison_country, comparison_approach, comparison_outcome, analysis_json
       )
     `)

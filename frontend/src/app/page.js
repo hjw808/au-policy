@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { getCategoryMeta, normalizeCategory } from '@/lib/categoryMeta'
 import { formatDate } from '@/lib/helpers'
 import SignalBadge from '@/components/SignalBadge'
+import ReaderVerdict from '@/components/ReaderVerdict'
 
 export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
@@ -18,7 +19,7 @@ async function getHomeData() {
       .in('status', ['flagged', 'complete']),
     supabase
       .from('timeline_events')
-      .select('category, impact_score, analysis_json, date, title, policy_id')
+      .select('category, impact_score, analysis_json, date, title, policy_id, primary_beneficiaries, disadvantaged_groups, what_changed')
       .order('impact_score', { ascending: false }),
     Promise.all([
       supabase.from('policies').select('*', { count: 'exact', head: true }).eq('status', 'complete'),
@@ -65,22 +66,23 @@ export default async function HomePage() {
 
   return (
     <div>
-      {/* Hero — pure typography */}
+      {/* Hero — reader-first voice */}
       <div className="mb-10">
         <h1 className="font-serif text-4xl md:text-[42px] font-bold leading-[1.1] tracking-tight text-gray-900 mb-3">
-          Who benefits from<br />Australian policy?
+          How does Australian policy<br />affect you?
         </h1>
         <p className="text-base text-gray-500 max-w-xl leading-relaxed">
-          {stats.total_complete} parliamentary decisions cross-referenced with political
-          donations, declared interests, and corporate tax data. All from public government records.
+          {stats.total_complete} parliamentary decisions checked against political
+          donations and declared interests. Every policy scored by how it affects
+          workers, renters, parents and taxpayers. Built from public records.
         </p>
       </div>
 
-      {/* Numbers — inline row, not boxed cards */}
+      {/* Numbers — inline row */}
       <div className="flex flex-wrap gap-10 py-5 border-t border-b border-gray-200 mb-10">
         <div>
           <p className="font-mono text-2xl font-medium text-gray-900">{Number(stats.total_complete).toLocaleString()}</p>
-          <p className="text-xs text-gray-400 mt-0.5">Policies</p>
+          <p className="text-xs text-gray-400 mt-0.5">Policies analysed</p>
         </div>
         <div>
           <p className="font-mono text-2xl font-medium text-gray-900">{Number(stats.total_members).toLocaleString()}</p>
@@ -91,12 +93,12 @@ export default async function HomePage() {
           <p className="text-xs text-gray-400 mt-0.5">Donation records</p>
         </div>
         <div>
-          <p className="font-mono text-2xl font-medium text-gray-900">{Number(stats.strong_signals).toLocaleString()}</p>
-          <p className="text-xs text-gray-400 mt-0.5">Strong signals</p>
+          <p className="font-mono text-2xl font-medium text-red-600">{Number(stats.strong_signals).toLocaleString()}</p>
+          <p className="text-xs text-gray-400 mt-0.5">Worth watching</p>
         </div>
       </div>
 
-      {/* Browse by category — text links, not cards */}
+      {/* Browse by category */}
       <div className="mb-10">
         <p className="text-[11px] font-semibold uppercase tracking-[1.5px] text-gray-400 mb-4">Browse by category</p>
         <div className="flex flex-wrap gap-x-6 gap-y-2">
@@ -115,9 +117,9 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* Content stream — highest impact decisions */}
+      {/* Content stream — highest impact, reader-framed */}
       <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[1.5px] text-gray-400 mb-4">Highest impact decisions</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[1.5px] text-gray-400 mb-4">Biggest decisions for everyday Australians</p>
         <div>
           {highlights.map((event, i) => {
             const signal = event.analysis_json?.corruption_signal_strength || 'none'
@@ -134,9 +136,12 @@ export default async function HomePage() {
 
                   {/* Body */}
                   <div>
-                    <p className={`text-[10px] font-semibold uppercase tracking-[0.5px] mb-1 ${catColor}`}>
-                      {meta.label}
-                    </p>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-[10px] font-semibold uppercase tracking-[0.5px] ${catColor}`}>
+                        {meta.label}
+                      </span>
+                      <ReaderVerdict event={event} size="compact" />
+                    </div>
                     <p className="text-[15px] font-semibold text-gray-900 leading-snug">
                       {event.title}
                     </p>

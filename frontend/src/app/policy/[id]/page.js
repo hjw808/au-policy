@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import SignalBadge from '@/components/SignalBadge'
 import ImpactMeter from '@/components/ImpactMeter'
+import ReaderVerdict from '@/components/ReaderVerdict'
+import { getReaderImpact } from '@/lib/readerImpact'
 import { formatDateFull, formatCurrency, getCategoryLabel, getCategoryColor } from '@/lib/helpers'
 
 export const dynamic = 'force-dynamic'
@@ -31,6 +33,7 @@ export default async function PolicyPage({ params }) {
   const signal = analysis.corruption_signal_strength || 'none'
   const catColor = getCategoryColor(policy.category)
   const flagExplanations = analysis.flag_explanations || []
+  const readerImpact = getReaderImpact(event)
 
   return (
     <div className="max-w-[720px] mx-auto">
@@ -46,7 +49,7 @@ export default async function PolicyPage({ params }) {
       </div>
 
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6">
         <div className="flex items-center gap-3 mb-3 flex-wrap">
           <span className={`text-[10px] font-semibold uppercase tracking-[0.5px] ${catColor}`}>
             {getCategoryLabel(policy.category)}
@@ -57,17 +60,27 @@ export default async function PolicyPage({ params }) {
         <h1 className="font-serif text-2xl md:text-3xl font-bold text-gray-900 leading-tight mb-4">
           {policy.title}
         </h1>
+      </div>
 
-        {event && (
-          <div className="flex items-center gap-3 mb-4">
-            <span className="font-mono text-2xl font-medium text-gray-900">{event.impact_score}</span>
+      {/* Reader Verdict — the hero element, answers "is this good or bad for ME?" */}
+      {event && (
+        <div className="mb-8">
+          <ReaderVerdict event={event} size="full" />
+
+          <div className="flex items-center gap-3 mt-4">
+            <span className={`font-mono text-2xl font-medium ${
+              readerImpact.verdict === 'positive' ? 'text-emerald-700' :
+              readerImpact.verdict === 'negative' ? 'text-red-700' :
+              readerImpact.verdict === 'mixed' ? 'text-amber-700' :
+              'text-gray-900'
+            }`}>{event.impact_score}</span>
             <span className="text-gray-400 text-sm">/10 impact</span>
             <div className="flex-1 max-w-[200px]">
-              <ImpactMeter score={event.impact_score} size="lg" />
+              <ImpactMeter score={event.impact_score} size="lg" verdict={readerImpact.verdict} />
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {event ? (
         <div className="space-y-8">
@@ -81,24 +94,24 @@ export default async function PolicyPage({ params }) {
             </div>
           )}
 
-          {/* Who benefited / Who lost */}
+          {/* Who gained / Who lost — framed for the reader */}
           <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-red-600 mb-3">Primary Beneficiaries</h3>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Who gained</h3>
               <ul className="space-y-1.5">
                 {(event.primary_beneficiaries || []).map((b, i) => (
                   <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
-                    <span className="text-red-400 text-xs mt-0.5">{'\u25B2'}</span> {b}
+                    <span className="text-emerald-500 text-xs mt-0.5">{'\u25B2'}</span> {b}
                   </li>
                 ))}
               </ul>
             </div>
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-blue-600 mb-3">Disadvantaged Groups</h3>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Who lost out</h3>
               <ul className="space-y-1.5">
                 {(event.disadvantaged_groups || []).map((d, i) => (
                   <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
-                    <span className="text-blue-400 text-xs mt-0.5">{'\u25BC'}</span> {d}
+                    <span className="text-gray-400 text-xs mt-0.5">{'\u25BC'}</span> {d}
                   </li>
                 ))}
               </ul>
@@ -108,7 +121,7 @@ export default async function PolicyPage({ params }) {
           {/* Revenue Impact */}
           {event.revenue_impact && (
             <div className="border-l-2 border-gray-200 pl-4">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Revenue Impact</h3>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Revenue impact</h3>
               {event.revenue_impact.split('\n\n').map((paragraph, i) => (
                 <p key={i} className="text-sm text-gray-700 leading-relaxed mb-2 last:mb-0">{paragraph}</p>
               ))}
@@ -132,13 +145,13 @@ export default async function PolicyPage({ params }) {
           {/* Conflicts of Interest */}
           {event.conflict_of_interest_flags && event.conflict_of_interest_flags.length > 0 && (
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-violet-600 mb-3">Conflicts of Interest</h3>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Declared interests</h3>
               <div className="space-y-2">
                 {event.conflict_of_interest_flags.map((f, i) => (
                   <div key={i} className="border border-gray-200 rounded p-3">
                     <p className="text-sm font-medium text-gray-900">{f.member}</p>
                     <p className="text-xs text-gray-500">{f.interest}</p>
-                    {f.relevance && <p className="text-xs text-violet-600 mt-1">{f.relevance}</p>}
+                    {f.relevance && <p className="text-xs text-gray-500 mt-1">{f.relevance}</p>}
                   </div>
                 ))}
               </div>
@@ -148,7 +161,7 @@ export default async function PolicyPage({ params }) {
           {/* Linked Donations */}
           {event.linked_donations && event.linked_donations.length > 0 && (
             <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-600 mb-3">Linked Donations</h3>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">Political donations nearby</h3>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-xs text-gray-400 text-left border-b border-gray-200">
@@ -169,7 +182,6 @@ export default async function PolicyPage({ params }) {
                   ))}
                 </tbody>
               </table>
-              {/* Donations context note */}
               {event.donations_context && (
                 <p className="text-xs text-gray-500 mt-3 leading-relaxed">{event.donations_context}</p>
               )}
@@ -179,7 +191,7 @@ export default async function PolicyPage({ params }) {
           {/* International Comparison */}
           {event.comparison_country && (
             <div className="border border-gray-200 rounded p-5">
-              <h3 className="text-xs font-semibold uppercase tracking-wide text-blue-600 mb-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-3">
                 How {event.comparison_country} handled this differently
               </h3>
               {event.comparison_approach && event.comparison_approach.split('\n\n').map((p, i) => (
@@ -201,11 +213,14 @@ export default async function PolicyPage({ params }) {
             </div>
           )}
 
-          {/* Flag Reasons — new plain English format */}
+          {/* Flag Reasons */}
           {flagExplanations.length > 0 ? (
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Why this was flagged</h3>
-              <p className="text-xs text-gray-500 mb-3">This policy was automatically flagged by our detection system:</p>
+              <p className="text-xs text-gray-500 mb-3">
+                Our system automatically scans for patterns between policy decisions, political donations,
+                and declared interests. A flag does not mean wrongdoing occurred.
+              </p>
               <div className="space-y-3">
                 {flagExplanations.map((f, i) => (
                   <div key={i} className="border-l-2 border-gray-200 pl-3">
@@ -216,7 +231,6 @@ export default async function PolicyPage({ params }) {
               </div>
             </div>
           ) : policy.flag_reasons && policy.flag_reasons.length > 0 ? (
-            /* Fallback for old-format flag reasons */
             <div>
               <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3">Why this was flagged</h3>
               <div className="space-y-2">

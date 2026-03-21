@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import SignalBadge from './SignalBadge'
+import ReaderVerdict from './ReaderVerdict'
 import { formatDate, getCategoryLabel, getCategoryColor } from '@/lib/helpers'
 
 export default function PolicyCard({ event }) {
@@ -14,17 +15,15 @@ export default function PolicyCard({ event }) {
           {formatDate(event.date)}
         </span>
         <div>
-          <p className={`text-[10px] font-semibold uppercase tracking-[0.5px] mb-1 ${catColor}`}>
-            {getCategoryLabel(event.category)}
-          </p>
+          <div className="flex items-center gap-2 mb-1">
+            <span className={`text-[10px] font-semibold uppercase tracking-[0.5px] ${catColor}`}>
+              {getCategoryLabel(event.category)}
+            </span>
+            <ReaderVerdict event={event} size="compact" />
+          </div>
           <p className="text-[15px] font-semibold text-gray-900 leading-snug">
             {event.title}
           </p>
-          {event.primary_beneficiaries && event.primary_beneficiaries.length > 0 && (
-            <p className="text-xs text-gray-400 mt-1">
-              Benefited: {event.primary_beneficiaries.join(', ')}
-            </p>
-          )}
         </div>
         <div className="text-right pt-1">
           <SignalBadge strength={signal} />
