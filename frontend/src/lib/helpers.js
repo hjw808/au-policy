@@ -1,3 +1,5 @@
+import meta, { getCategoryMeta } from '@/lib/categoryMeta'
+
 /**
  * Signal strength display config — Wire design (light theme).
  */
@@ -43,48 +45,23 @@ export function formatDateFull(dateStr) {
 }
 
 /**
- * Category display labels.
+ * Category labels map — includes all canonical categories.
+ * Backward-compatible export for components that use categoryLabels directly.
  */
-export const categoryLabels = {
-  mining: 'Mining & Resources',
-  oil_gas: 'Energy & Gas',
-  tax: 'Taxation',
-  superannuation: 'Superannuation',
-  property: 'Housing & Property',
-  healthcare: 'Healthcare',
-  defence: 'Defence',
-  privatisation: 'Privatisation',
-  resources: 'Natural Resources',
-  trade: 'Trade & Tariffs',
-  subsidy: 'Subsidies',
-  general: 'General Policy',
-}
+export const categoryLabels = Object.fromEntries(
+  Object.entries(meta).map(([slug, m]) => [slug, m.label])
+)
 
 /**
- * Get category label.
+ * Get category label — uses normalization from categoryMeta.
  */
 export function getCategoryLabel(cat) {
-  return categoryLabels[cat] || cat || 'Unknown'
+  return getCategoryMeta(cat).label
 }
 
 /**
- * Category text colors for Wire design (muted, specific per category).
+ * Get category text color — uses normalization from categoryMeta.
  */
-export const categoryColors = {
-  mining: 'text-amber-700',
-  oil_gas: 'text-red-700',
-  tax: 'text-blue-700',
-  superannuation: 'text-indigo-700',
-  property: 'text-violet-700',
-  healthcare: 'text-emerald-700',
-  defence: 'text-slate-600',
-  privatisation: 'text-orange-700',
-  resources: 'text-lime-700',
-  trade: 'text-cyan-700',
-  subsidy: 'text-pink-700',
-  general: 'text-gray-500',
-}
-
 export function getCategoryColor(cat) {
-  return categoryColors[cat] || categoryColors.general
+  return getCategoryMeta(cat).colorClass
 }

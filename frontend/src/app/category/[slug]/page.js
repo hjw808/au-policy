@@ -1,6 +1,6 @@
 import { createServerClient } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
-import { getCategoryMeta } from '@/lib/categoryMeta'
+import { getCategoryMeta, getRawSlugsForCategory } from '@/lib/categoryMeta'
 import CategoryHeader from '@/components/CategoryHeader'
 import TimelineTree from '@/components/TimelineTree'
 import YearNav from '@/components/YearNav'
@@ -10,6 +10,9 @@ export const dynamic = 'force-dynamic'
 
 async function getCategoryData(slug) {
   const supabase = createServerClient()
+
+  // Get all raw category slugs that map to this canonical category
+  const rawSlugs = getRawSlugsForCategory(slug)
 
   const { data: policies } = await supabase
     .from('policies')
@@ -21,7 +24,7 @@ async function getCategoryData(slug) {
         comparison_country, comparison_approach, comparison_outcome, analysis_json
       )
     `)
-    .eq('category', slug)
+    .in('category', rawSlugs)
     .in('status', ['flagged', 'complete'])
     .order('date', { ascending: false })
 
@@ -41,10 +44,20 @@ async function getCategoryData(slug) {
 
   // Get donation totals
   const industryMap = {
-    mining: ['mining'], oil_gas: ['oil_gas', 'energy'], tax: ['financial'],
+    mining: ['mining'], oil_gas: ['oil_gas', 'energy'], tax: ['financial', 'tax'],
     property: ['property'], healthcare: ['healthcare'], defence: ['defence'],
     resources: ['mining', 'agriculture', 'oil_gas'], superannuation: ['financial'],
     trade: ['retail', 'agriculture'], subsidy: ['agriculture', 'mining', 'energy'],
+    infrastructure: ['infrastructure', 'construction'],
+    financial_regulation: ['financial', 'banking'],
+    education: ['education'],
+    immigration: ['immigration'],
+    industrial_relations: ['industrial'],
+    agriculture: ['agriculture'],
+    gambling: ['gambling', 'entertainment'],
+    media: ['media', 'telecommunications'],
+    indigenous: ['indigenous'],
+    environment: ['environment'],
     general: [],
   }
   const industries = industryMap[slug] || []

@@ -1,7 +1,7 @@
 import { createServerClient } from '@/lib/supabase'
 import Link from 'next/link'
-import { getCategoryMeta } from '@/lib/categoryMeta'
-import { formatDate, getCategoryColor } from '@/lib/helpers'
+import { getCategoryMeta, normalizeCategory } from '@/lib/categoryMeta'
+import { formatDate } from '@/lib/helpers'
 import SignalBadge from '@/components/SignalBadge'
 
 export const dynamic = 'force-dynamic'
@@ -31,16 +31,16 @@ async function getHomeData() {
   const policies = policiesRes.data || []
   const events = eventsRes.data || []
 
-  // Build category summaries
+  // Build category summaries — normalize raw slugs to canonical categories
   const cats = {}
   for (const p of policies) {
-    const cat = p.category || 'general'
-    if (!cats[cat]) cats[cat] = { slug: cat, policyCount: 0 }
-    cats[cat].policyCount++
+    const canonical = normalizeCategory(p.category)
+    if (!cats[canonical]) cats[canonical] = { slug: canonical, policyCount: 0 }
+    cats[canonical].policyCount++
   }
 
   const categories = Object.values(cats)
-    .filter(c => c.policyCount > 0)
+    .filter(c => c.policyCount > 0 && c.slug !== 'general')
     .sort((a, b) => b.policyCount - a.policyCount)
 
   // Top impact highlights
@@ -122,7 +122,7 @@ export default async function HomePage() {
           {highlights.map((event, i) => {
             const signal = event.analysis_json?.corruption_signal_strength || 'none'
             const meta = getCategoryMeta(event.category)
-            const catColor = getCategoryColor(event.category)
+            const catColor = meta.colorClass
 
             return (
               <Link key={event.policy_id || i} href={`/policy/${event.policy_id}`}>
